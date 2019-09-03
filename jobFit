@@ -1,0 +1,40 @@
+#!/bin/bash
+#> don't use #!/bin/csh -f --you lose the module comman
+#SBATCH --partition=savio3
+#SBATCH --account=co_aiolos
+#SBATCH --qos=aiolos_savio3_normal
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=16
+# Wall clock limit:
+#SBATCH --time=24:00:00
+# Mail me for any notification
+#SBATCH --output=%N-%j.out
+#SBATCH --mail-type=all
+#SBATCH --mail-user=lynchlee90@gmail.com
+
+#ulimit -s unlimited
+#export KMP_STACKSIZE=9209715200
+
+
+cd /global/home/users/chili/Collocation
+source bin/activate
+
+python FitRecordsall.py --season winter --loc NO2 --sDom True &
+python FitRecordsall.py --season spring --loc NO2 --sDom True &
+python FitRecordsall.py --season summer --loc NO2 --sDom True &
+python FitRecordsall.py --season fall --loc NO2 --sDom True &
+python FitRecordsall.py --season winter --loc NO2 --sDom False &
+python FitRecordsall.py --season spring --loc NO2 --sDom False &
+python FitRecordsall.py --season summer --loc NO2 --sDom False &
+python FitRecordsall.py --season fall --loc NO2 --sDom False &
+python FitRecordsall.py --season winter --loc SO2 --sDom True &
+python FitRecordsall.py --season spring --loc SO2 --sDom True &
+python FitRecordsall.py --season summer --loc SO2 --sDom True &
+python FitRecordsall.py --season fall --loc SO2 --sDom True &
+python FitRecordsall.py --season winter --loc SO2 --sDom False &
+python FitRecordsall.py --season spring --loc SO2 --sDom False &
+python FitRecordsall.py --season summer --loc SO2 --sDom False &
+python FitRecordsall.py --season fall --loc SO2 --sDom False &
+
+wait
+

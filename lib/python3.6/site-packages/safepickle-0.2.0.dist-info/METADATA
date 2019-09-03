@@ -1,0 +1,14 @@
+Metadata-Version: 2.0
+Name: safepickle
+Version: 0.2.0
+Summary: An alternative to using Python's pickle
+Home-page: http://n.io
+Author: n.io
+Author-email: info@n.io
+License: Apache 2.0
+Keywords: safepickle
+Platform: UNKNOWN
+
+UNKNOWN
+
+

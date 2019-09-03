@@ -1,0 +1,21 @@
+#!/bin/bash
+#> don't use #!/bin/csh -f --you lose the module comman
+#SBATCH --partition=savio3
+#SBATCH --account=co_aiolos
+#SBATCH --qos=aiolos_savio3_normal
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+# Wall clock limit:
+#SBATCH --time=1:00:00
+# Mail me for any notification
+#SBATCH --output=%N-%j.out
+#SBATCH --mail-type=all
+#SBATCH --mail-user=lynchlee90@gmail.com
+
+#ulimit -s unlimited
+#export KMP_STACKSIZE=9209715200
+
+
+cd /global/home/users/chili/Collocation
+source bin/activate
+python Combinehv.py --start 2001 --end 2013
