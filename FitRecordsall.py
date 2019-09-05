@@ -28,7 +28,7 @@ ndirs=len(Dirs)
 
 indir = '/global/scratch/chili/AvgMCD/SepWs/'
 minobs = 1
-outdir = "/global/scratch/chili/AvgMCD/RecordsAll/"
+outdir = "/global/scratch/chili/AvgMCD/Records/"
 SO2file='/global/scratch/chili/AvgMCD/SO2-2014-US.csv'
 NO2file='/global/scratch/chili/AvgMCD/NO2-Lu-2015.csv'
 Aerfile = indir + season + '.2001-2013.nc'
@@ -36,10 +36,10 @@ Aerfile = indir + season + '.2001-2013.nc'
 varname='AOD'
 sfactor=0.001
 
-usewsbins=[0,1]
+usewsbins=[1,2]
 
-xmin=-200.
-xmax=400.   #km
+xmin=-300.
+xmax=600.   #km
 xEMG=np.array([xmin,xmax])
 ymax=150.
 minacross=ymax
@@ -211,10 +211,10 @@ for ist in np.arange(len(Citys)):   #len(Citys)
 
             if sDom=='True':
                 [outEMA, successA] = EMFit.EMAFit(xW[EMGinds], AvgW[EMGinds], samplewd, minx0, nsample, \
-                                                  sameSource=True, sameSigma=True, sDom=True)
+                                                  sameSource=True, sDom=True)
             else:
                 [outEMA, successA] = EMFit.EMAFit(xW[EMGinds], AvgW[EMGinds], samplewd, minx0, nsample, \
-                                                  sameSource=True, sameSigma=True)
+                                                  sameSource=True)
 
 
             if successA == False:
