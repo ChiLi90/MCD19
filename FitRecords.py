@@ -60,7 +60,7 @@ nEMG=len(EMGPars)
 if sDom=='True':
     EMAPars = np.array(['c', 'xa', 'xc', 'xscc', 'sigmac', 'b'])
 else:
-    EMAPars = np.array(['a','c', 'xa', 'xc', 'xscc', 'sigmac', 'b'])
+    EMAPars = np.array(['a','c', 'xa', 'xc', 'xscc', 'sigmaa','sigmac', 'b'])
 
 nEMA=len(EMAPars)
 
