@@ -5,30 +5,36 @@ import matplotlib.pyplot as plt
 import MCD19
 from scipy.stats.stats import pearsonr
 import EMFit
+from os import path
 
 
+dir='/Users/chili/Downloads/AvgMCD/Records/'
+outdir='/Users/chili/Downloads/AvgMCD/Records/Figs/'
 
-EMGdir='/Users/chili/Downloads/AvgBEHR/Citys/'
-EMFdir='/Users/chili/Downloads/AvgBEHR/Citys/EMF/'
-outEMFdir='/Users/chili/Downloads/AvgBEHR/Citys/EMFFigs/'
-outEMGdir='/Users/chili/Downloads/AvgBEHR/Citys/EMGFigs/'
 
 seasons=['winter','spring','summer','fall']
 samplewd=5
+sDom=False
 
-NO2file='/Users/chili/Downloads/MAIAC/NO2-Lu-2015.csv'
+NO2file='/Users/chili/Downloads/MAIAC/SO2-2014-US.csv'
 csvdata = MCD19.CSVload(NO2file)
-NO2Lats = csvdata[1:, 2].astype(float)
-NO2Lons = csvdata[1:, 3].astype(float)
-Citys = csvdata[1:,0]
+NO2Lats = csvdata[1:, 1].astype(float)
+NO2Lons = csvdata[1:, 2].astype(float)
+Citys = csvdata[1:,5]
 
-# NO2file='/Users/chili/Downloads/MAIAC/NO2-China-2016.csv'
-# csvdata = MCD19.CSVload(NO2file)
-# NO2Lats = csvdata[1:, 1].astype(float)
-# NO2Lons = csvdata[1:, 2].astype(float)
-# Citys = csvdata[1:,0]
 
-print 'City, Lat, Lon, season, Dir, WS, tau, tau_sigma, r'
+
+Fitpardicts=dict()
+Fitpardicts['EMG']=np.array(['a','x0','xsc','sigma','b'])
+
+if sDom==True:
+    Fitpardicts['EMA'] = np.array(['c', 'xa', 'xc', 'xscc', 'sigmac', 'b'])
+else:
+    Fitpardicts['EMA']=np.array(['a','c', 'xa', 'xc', 'xscc', 'sigmac', 'b'])
+
+
+
+#print ('City, Lat, Lon, season, Dir, WS, tau, tau_sigma, r')
 
 for season in seasons:
 
@@ -38,114 +44,88 @@ for season in seasons:
         Lat=NO2Lats[iCity]
         Lon=NO2Lons[iCity]
 
-        # file=EMGdir+City+'.'+season+'.rcd'
-        #
-        # fitRpt = EMFit.ExamFit(file, DoEMG=True, DoEMF=False, GoodR=0.9)
-        #
-        #
-        # for (Dir,Fitdata) in fitRpt.items():
-        #
-        #     if Fitdata['x0_EMG'] * samplewd/Fitdata['ws']>1000.:
-        #         continue
-        #
-        #     if np.isnan(Fitdata['x0std_EMG']):
-        #         Fitdata['x0std_EMG']=0.3*Fitdata['x0_EMG']
-        #
-        #     outfile=outEMGdir+City+'.'+season+'.'+Dir+'.png'
-        #
-        #     AvgW=Fitdata['AvgW']
-        #     xW=Fitdata['xW']
-        #
-        #     FitAvgWEMG = EMFit.EMG(xW, Fitdata['a_EMG'], Fitdata['x0_EMG'], Fitdata['xsc_EMG'], \
-        #                            Fitdata['sigma_EMG'], Fitdata['b_EMG'])
-        #     corvalueEMG = pearsonr(AvgW,FitAvgWEMG)
-        #
-        #     if corvalueEMG[0]<0.85:
-        #         continue
-        #
-        #     print City, Lat,',',Lon,',',season,',', Dir,',', Fitdata['ws'],',', \
-        #         Fitdata['x0_EMG'] * samplewd/Fitdata['ws'],',', Fitdata['x0std_EMG'] * samplewd/Fitdata['ws'],','\
-        #         ,corvalueEMG[0]
-        #
-        #     fig, axs = plt.subplots()
-        #     plt.xlabel('X (km)')
-        #     plt.ylabel('AOD')
-        #
-        #     axs.plot(xW * samplewd, AvgW, 'ro')
-        #
-        #     axs.plot(xW * samplewd, FitAvgWEMG, color='black')
-        #     plt.text(0.03, 0.9, 'x0: ' + '{:10.1f}'.format(Fitdata['x0_EMG'] * samplewd).strip() + \
-        #              r'$\pm $'+'{:10.1f}'.format(Fitdata['x0std_EMG'] * samplewd).strip()+' km',\
-        #              transform=axs.transAxes)
-        #     plt.text(0.03, 0.85, 'Correlation (p): ' + '{:10.2f}'.format(corvalueEMG[0]).strip() \
-        #              + ' (' + '{:10.3f}'.format(corvalueEMG[1]).strip() + ')', transform=axs.transAxes)
-        #
-        #     plt.text(0.03, 0.95, City+' '+season+', '+Dir, transform=axs.transAxes)
-        #     plt.text(0.03, 0.7, 'wind speed: ' + '{:10.1f}'.format(Fitdata['ws']).strip() + ' km/h, '\
-        #              +r'$\tau $= ' + '{:10.1f}'.format(Fitdata['x0_EMG'] * samplewd/Fitdata['ws']).strip() + \
-        #              r'$\pm $'+'{:10.1f}'.format(Fitdata['x0std_EMG'] * samplewd/Fitdata['ws']).strip()+ ' hr',\
-        #              transform=axs.transAxes)
-        #     plt.savefig(outfile, dpi=600)
-        #     plt.close()
-
-        file = EMFdir + City + '.' + season + '.rcd'
-
-        fitRpt = EMFit.ExamFit(file, DoEMG=False, DoEMF=True, GoodR=0.9)
-        print fitRpt
-        for (Dir, Fitdata) in fitRpt.items():
-
-            if np.isnan(Fitdata['x0std_EMF'])==True:
-                Fitdata['x0std_EMF'] = 0.05 * Fitdata['x0_EMF']
-
-            outfile = outEMFdir + City + '.' + season + '.' + Dir + '.png'
-
-            AvgW = Fitdata['AvgW']
-            xW = Fitdata['xW']
-            AvgC = Fitdata['AvgC']
-            xC = Fitdata['xC']
-            print Fitdata
-            [nhf, CMatrix, startind, endind] = EMFit.PrepareEMF(xW, xC, AvgC, Fitdata['xmax'])
+        if sDom==True:
+            file = dir + City + '.' + season + '.rcd'
+        else:
+            file = dir + City + '.' + season + '.alt.rcd'
 
 
-            FitAvgWEMF = EMFit.EMF(xW,nhf,CMatrix,startind,endind,Fitdata['a_EMF'],Fitdata['b_EMF'],Fitdata['x0_EMF'])
+        if path.exists(file)==False:
+            continue
 
-            ARatio=np.mean(AvgW[startind:endind + 1])/np.mean(FitAvgWEMF)
+        fitRpt = EMFit.ExamFit(file, Fitpardicts, GoodR=0.9)
 
-            Fitdata['a_EMF'] = Fitdata['a_EMF'] * ARatio
-            Fitdata['b_EMF'] = Fitdata['b_EMF'] * ARatio
+        if fitRpt==None:
+            continue
 
-            FitAvgWEMF = EMFit.EMF(xW, nhf, CMatrix, startind, endind, Fitdata['a_EMF'], Fitdata['b_EMF'],
-                                   Fitdata['x0_EMF'])
-            corvalueEMF = pearsonr(AvgW[startind:endind + 1], FitAvgWEMF)
-            print corvalueEMF[0]
-            if corvalueEMF[0] < 0.85:
-                continue
+        for (Dir,Fitdata) in fitRpt.items():
 
-            print City, Lat, ',', Lon, ',', season, ',', Dir, ',', Fitdata['ws'], ',', \
-                Fitdata['x0_EMF'] * samplewd/Fitdata['ws'],',', Fitdata['x0std_EMF'] * samplewd/Fitdata['ws'],','\
-                ,corvalueEMG[0]
+            outfile = outdir + City + '.' + season + '.' + Dir + '.png'
+            startplot=False
+            for key,value in Fitpardicts.items():
 
-            fig, axs = plt.subplots()
-            plt.xlabel('X (km)')
-            plt.ylabel('AOD')
+                if value[0]+'_'+key in Fitdata:
+                    if startplot==False:
 
-            axs.plot(xW * samplewd, AvgW, 'ro')
-            axs.plot(xC * samplewd, AvgC, 'bo')
+                        AvgW = Fitdata['Y']
 
-            axs.plot(xW[startind:endind+1] * samplewd, FitAvgWEMF, color='black')
-            plt.text(0.03, 0.9, 'x0: ' + '{:10.1f}'.format(Fitdata['x0_EMF'] * samplewd).strip() + \
-                     r'$\pm $' + '{:10.1f}'.format(Fitdata['x0std_EMF'] * samplewd).strip() + ' km', \
-                     transform=axs.transAxes)
-            plt.text(0.03, 0.85, 'Correlation (p): ' + '{:10.2f}'.format(corvalueEMF[0]).strip() \
-                     + ' (' + '{:10.3f}'.format(corvalueEMF[1]).strip() + ')', transform=axs.transAxes)
+                        xW = Fitdata['xW']
+                        inds=np.argwhere(AvgW>0.)
 
-            plt.text(0.03, 0.95, City + ' ' + season + ', ' + Dir, transform=axs.transAxes)
-            plt.text(0.03, 0.7, 'wind speed: ' + '{:10.1f}'.format(Fitdata['ws']).strip() + ' km/h, ' \
-                     + r'$\tau $= ' + '{:10.1f}'.format(Fitdata['x0_EMF'] * samplewd / Fitdata['ws']).strip() + \
-                     r'$\pm $' + '{:10.1f}'.format(Fitdata['x0std_EMF'] * samplewd / Fitdata['ws']).strip() + ' hr', \
-                     transform=axs.transAxes)
-            plt.savefig(outfile, dpi=600)
-            plt.close()
+                        # if AvgW[inds[-1]]-AvgW[inds[np.round(len(inds)*0.66).astype(int)]]>0.:
+                        #     continue
+
+                        startplot = True
+                        fig, axs = plt.subplots()
+                        plt.xlabel('X (km)')
+                        plt.ylabel('AOD')
+                        axs.plot(xW[inds] * samplewd, AvgW[inds], 'ro',mfc='none')
+                        plt.text(0.03,0.8,'Wind speed='+'{:10.1f}'.format(Fitdata['ws']).strip()+' km/h',\
+                                 transform=axs.transAxes)
+                    if key == 'EMG':
+                        FitAvgW = EMFit.EMG(xW[inds], Fitdata['a_' + key], Fitdata['x0_' + key], \
+                                            Fitdata['xsc_' + key], Fitdata['sigma_' + key], Fitdata['b_' + key])
+
+                        corvalue = pearsonr(AvgW[inds].flatten(),FitAvgW.flatten())
+                        axs.plot(xW[inds] * samplewd, FitAvgW, color='black')
+                        plt.text(0.03, 0.9, key + ' x0=' + '{:10.1f}'.format(Fitdata['x0_' + key] * samplewd).strip() \
+                                 + 'km, xsc=' + '{:10.1f}'.format(Fitdata['xsc_' + key] * samplewd).strip()
+                                 # r'$\pm $' + '{:10.1f}'.format(Fitdata['x0std_EMG'] * samplewd).strip()\
+                                 + ' km, correlation=' + '{:10.2f}'.format(corvalue[0]).strip(), transform=axs.transAxes)
+                    if key == 'EMA':
+                        c = Fitdata['c_' + key]
+                        xa = Fitdata['xa_' + key]
+
+                        xc = Fitdata['xc_' + key]
+
+                        if np.absolute(xc-xa)/xa<0.0000001:
+                            continue
+                        xsca = Fitdata['xscc_' + key]
+                        sigmaa = Fitdata['sigmac_' + key]
+                        xscc = xsca
+                        sigmac = sigmaa
+                        b = Fitdata['b_' + key]
+                        if sDom == True:
+                            a = 0.
+                        else:
+                            a = Fitdata['a_' + key]
+
+                        FitAvgW = EMFit.EMA(xW[inds], a, c, xa, xc, xsca, xscc, sigmaa, sigmac, b)
+                        corvalue = pearsonr(AvgW[inds].flatten(),FitAvgW.flatten())
+                        axs.plot(xW[inds] * samplewd, FitAvgW, color='blue')
+                        plt.text(0.03, 0.85, key + ' xa=' + '{:10.1f}'.format(Fitdata['xa_' + key] * samplewd).strip() \
+                                 + 'km, xc=' + '{:10.1f}'.format(Fitdata['xc_' + key] * samplewd).strip() \
+                                 + 'km, xsc=' + '{:10.1f}'.format(Fitdata['xscc_' + key] * samplewd).strip() \
+                                 # r'$\pm $' + '{:10.1f}'.format(Fitdata['x0std_EMG'] * samplewd).strip()\
+                                 + ' km, correlation=' + '{:10.2f}'.format(corvalue[0]).strip(), transform=axs.transAxes,\
+                                 color='blue')
+
+            if startplot==True:
+                plt.savefig(outfile, dpi=600)
+                plt.close()
+
+
+
 
 
 

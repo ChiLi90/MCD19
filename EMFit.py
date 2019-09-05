@@ -339,9 +339,9 @@ def EMAFit(x,data,samplewd,minx0,nSample,**kwargs):
                     bounds.ub[0]=0.
 
 
-                lconstmat=[[0, 0, 1, 0, 1, 0, 0, 0, 0], [0, 0, 0, 1, 0, 1, 0, 0, 0]]
-                lconstmin=[-np.inf, -np.inf]
-                lconstmax=[x[-1], x[-1]]
+                lconstmat=[[0, 0, 1, 0, 1, 0, 0, 0, 0], [0, 0, 0, 1, 0, 1, 0, 0, 0],[0,0,1,-1,0,0,0,0,0]]
+                lconstmin=[-np.inf, -np.inf,0]
+                lconstmax=[x[-1], x[-1],np.inf]
 
 
 
@@ -636,98 +636,82 @@ def mapcount(filename):
     f.close()
     return lines
 
-def ExamFit(file,DoEMG,DoEMF,GoodR):
+def ExamFit(file,Pardicts,GoodR):
 
     Dirs=['W', 'SW', 'S', 'SE', 'E', 'NE', 'N', 'NW']
+    ndirs=len(Dirs)
     linNo=mapcount(file)
-    xmax=(linNo-13)/2
+    nheader=2
+
+    nfit=len(Pardicts.keys())
+
+    totalcount=0
+    for key,value in Pardicts.items():
+
+        totalcount=totalcount+len(value)
+
+    xmax=linNo-totalcount-nheader-3
 
 
-    Fitdata=np.chararray([linNo-2,17],itemsize=10)
+    Fitdata=np.chararray([linNo-nheader,2*ndirs+1],itemsize=10)
     Fitdata = np.genfromtxt(file,dtype='str',skip_header=2)
 
-    rEMGs=Fitdata[xmax*2+5,np.arange(8)*2+1].astype(float)
-    rEMFs =Fitdata[xmax * 2 + 9, np.arange(8) * 2 + 1].astype(float)
 
-    if (np.max(rEMGs)<GoodR) & (np.max(rEMFs)<GoodR):
-        return dict()
 
-    xarray=Fitdata[0:xmax,0].astype(int)
+    AvgW = Fitdata[0:xmax, :].astype(float)
 
-    FitDict=dict()
-
+    startrec=False
     for idir in np.arange(8):
 
+        #one sub-dirctionary for each wind direction
+        startdict = False
+        xstart = xmax
 
-        rEMG = rEMGs[idir]
-        rEMF = rEMFs[idir]
+        for key,value in Pardicts.items():
 
-        if (rEMG<GoodR) & (rEMF<GoodR):
-            continue
 
-        AvgW = Fitdata[0:xmax, 2 * idir + 1].astype(float)
+            npar = len(value)
 
-        Windyinds = np.nonzero(AvgW > 0.)
+            Fitone = Fitdata[xstart:xstart + npar + 1, 2*idir+1:2*idir+3]
+            xstart=xstart+npar+1
 
-        Fitinds=np.nonzero((AvgW > 0.) & (xarray>=(-1*xmax/2/3)))
+            correlation=np.float(Fitone[len(value),0])
 
-        if (np.array(Fitinds).size<(xmax*2/3*0.7)):
-            continue
+            if correlation<GoodR:
+                continue
 
-        DoneEMG = False
-        DoneEMF = False
+            if startdict==False:
 
-        if DoEMG==True:
+                dirDict = dict()
+                startdict = True
 
-            if (rEMG>=GoodR):
-                dirDict=dict()
-                dirDict['AvgW']=AvgW[Windyinds]
-                dirDict['xW']=xarray[Windyinds]
-                dirDict['a_EMG']=np.float(Fitdata[xmax * 2 + 0, idir * 2 + 1])
-                dirDict['x0_EMG'] =np.float(Fitdata[xmax * 2 + 1, idir * 2 + 1])
-                dirDict['xsc_EMG'] =np.float(Fitdata[xmax * 2 + 2, idir * 2 + 1])
-                dirDict['sigma_EMG'] =np.float(Fitdata[xmax * 2 + 3, idir * 2 + 1])
-                dirDict['b_EMG'] =np.float(Fitdata[xmax * 2 + 4, idir * 2 + 1])
-                dirDict['x0std_EMG'] =np.float(Fitdata[xmax * 2 + 1, idir * 2 + 2])
+            dirDict['Y'] = AvgW[:, 2 * idir + 1]
+            dirDict['xW'] = AvgW[:, 0]
 
-                if (np.isnan(dirDict['x0std_EMG'])) | (dirDict['x0std_EMG']/dirDict['x0_EMG']<1.):
-                    DoneEMG = True
+            for ipar in np.arange(npar):
+                dirDict[value[ipar] + '_' + key] = np.float(Fitone[ipar, 0])
+                dirDict[value[ipar] + 'std_' + key] = np.float(Fitone[ipar, 1])
 
-        if DoEMF==True:
-            AvgC = Fitdata[xmax:xmax * 2, 2 * idir + 1].astype(float)
-
-            if (rEMF>=GoodR):
-
-                if(DoneEMG==False):
-                    dirDict=dict()
-                    dirDict['AvgW'] = AvgW[Windyinds]
-                    dirDict['xW'] = xarray[Windyinds]
-
-                Calminds = np.nonzero(AvgC > 0.)
-                # at least 70% coverage of the along-wind direction
-                if (np.array(Calminds).size >= xmax * 0.7):
-
-                    dirDict['AvgC'] = AvgC[Calminds]
-                    dirDict['xC'] = xarray[Calminds]
-                    dirDict['a_EMF'] = np.float(Fitdata[xmax * 2 + 6, idir * 2 + 1])
-                    dirDict['x0_EMF'] = np.float(Fitdata[xmax * 2 + 7, idir * 2 + 1])
-                    dirDict['b_EMF'] = np.float(Fitdata[xmax * 2 + 8, idir * 2 + 1])
-                    dirDict['xmax'] = np.max(xarray)
-                    dirDict['x0std_EMF']=np.float(Fitdata[xmax * 2 + 7, idir * 2 + 2])
-
-                    if (np.isnan(dirDict['x0std_EMF'])) | (dirDict['x0std_EMF']/dirDict['x0_EMF']<1.):
-                        DoneEMF = True
+            dirDict['R_'+key]=correlation
 
 
 
-        if (DoneEMF==False) & (DoneEMG==False):
-            continue
-        dirDict['ws']=np.float(Fitdata[xmax * 2 + 10, idir * 2 + 1])
 
-        FitDict[Dirs[idir]]=dirDict
+        if startdict==True:
+            dirDict['ws'] = np.float(Fitdata[xstart, idir * 2 + 1])
+            if startrec==False:
+                FitDict=dict()
+                startrec=True
+
+            FitDict[Dirs[idir]] = dirDict
 
 
-    return FitDict
+    if startrec==True:
+        return FitDict
+    else:
+        return None
+
+
 
 
 
