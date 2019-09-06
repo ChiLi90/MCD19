@@ -10,6 +10,7 @@ import MCD19
 import glob
 
 indir='/global/scratch/chili/AvgMCD/SepWs/'
+outdir='/global/scratch/chili/AvgMCD/SepWs/MWS/'
 #strhvs = ['h26v05','h26v06','h27v05','h27v06','h28v05','h28v06']
 hs=np.arange(5)+8
 vs=np.arange(2)+4
@@ -35,7 +36,7 @@ strse='{:10.0f}'.format(startyr).strip()+'-'+'{:10.0f}'.format(endyr).strip()
 
 for season in seasons:
 
-    outfile=indir+season+'.'+strse+'.nc'
+    outfile=outdir+season+'.'+strse+'.nc'
 
     dso = Dataset(outfile, mode='w', format='NETCDF4')
 

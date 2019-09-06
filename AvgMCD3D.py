@@ -21,12 +21,12 @@ end=args.end
 
 Aerdir = '/global/scratch/chili/MCD19A2.006/'
 
-outdir = '/global/scratch/chili/AvgMCD/SepWs/'
+outdir = '/global/scratch/chili/AvgMCD/SepWs/MWS/'
 if not os.path.exists(outdir):
         os.makedirs(outdir)
 
 complete=0.3
-wsbin=[3.] #m/s
+wsbin=[1.5,4.,8.] #m/s
 seasons=['winter','spring','summer','fall']  #
 #georange=[-116., 35., -114., 37.]
 
