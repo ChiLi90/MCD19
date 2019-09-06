@@ -7,6 +7,6 @@ pip freeze requirements.txt
 
 git push -u origin master
 
-deactivate
-
 git remote remove origin
+
+deactivate
