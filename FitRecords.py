@@ -44,7 +44,7 @@ xEMG=np.array([xmin,xmax])
 ymax=150.
 minacross=ymax
 samplewd=5.
-nsample=100
+nsample=50
 xmax=np.round(xmax/samplewd).astype(int)
 xmin=np.round(xmin/samplewd).astype(int)
 xEMG=np.round(xEMG/samplewd).astype(int)
@@ -98,7 +98,7 @@ for ist in np.arange(len(Citys)):   #len(Citys)
 
     City = Citys[ist]
     RtCenter = np.array([CityLons[ist], CityLats[ist]]).astype(float)
-    if sDom==True:
+    if sDom=='True':
         outfile=outdir+City+'.'+season+'.rcd'
     else:
         outfile=outdir+City+'.'+season+'.alt.rcd'

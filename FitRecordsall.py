@@ -28,7 +28,7 @@ ndirs=len(Dirs)
 
 indir = '/global/scratch/chili/AvgMCD/SepWs/'
 minobs = 1
-outdir = "/global/scratch/chili/AvgMCD/Records/"
+outdir = "/global/scratch/chili/AvgMCD/RecordsAll/"
 SO2file='/global/scratch/chili/AvgMCD/SO2-2014-US.csv'
 NO2file='/global/scratch/chili/AvgMCD/NO2-Lu-2015.csv'
 Aerfile = indir + season + '.2001-2013.nc'
@@ -36,7 +36,7 @@ Aerfile = indir + season + '.2001-2013.nc'
 varname='AOD'
 sfactor=0.001
 
-usewsbins=[1,2]
+usewsbins=[0,1]
 
 xmin=-300.
 xmax=600.   #km
@@ -44,7 +44,7 @@ xEMG=np.array([xmin,xmax])
 ymax=150.
 minacross=ymax
 samplewd=5.
-nsample=100
+nsample=50
 xmax=np.round(xmax/samplewd).astype(int)
 xmin=np.round(xmin/samplewd).astype(int)
 xEMG=np.round(xEMG/samplewd).astype(int)
@@ -60,7 +60,7 @@ nEMG=len(EMGPars)
 if sDom=='True':
     EMAPars = np.array(['c', 'xa', 'xc', 'xscc', 'sigmac', 'b'])
 else:
-    EMAPars = np.array(['a','c', 'xa', 'xc', 'xscc', 'sigmac', 'b'])
+    EMAPars = np.array(['a','c', 'xa', 'xc', 'xscc', 'sigmaa','sigmac', 'b'])
 
 nEMA=len(EMAPars)
 
@@ -98,7 +98,7 @@ for ist in np.arange(len(Citys)):   #len(Citys)
 
     City = Citys[ist]
     RtCenter = np.array([CityLons[ist], CityLats[ist]]).astype(float)
-    if sDom==True:
+    if sDom=='True':
         outfile=outdir+City+'.'+season+'.rcd'
     else:
         outfile=outdir+City+'.'+season+'.alt.rcd'
