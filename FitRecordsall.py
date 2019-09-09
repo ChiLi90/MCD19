@@ -143,7 +143,7 @@ for ist in np.arange(len(Citys)):   #len(Citys)
                 Windyu10 = Windyu10 + u10 * Sample
                 Windyv10 = Windyv10 + v10 * Sample
                 WindyNo = WindyNo + Sample
-
+            bincount = bincount + 1
         WindyAOD = WindyAOD / WindyNo
         Windyu10 = Windyu10 / WindyNo
         Windyv10 = Windyv10 / WindyNo
