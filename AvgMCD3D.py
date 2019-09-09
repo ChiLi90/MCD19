@@ -27,7 +27,7 @@ if not os.path.exists(outdir):
 
 complete=0.3
 wsbin=[1.5,4.,8.] #m/s
-seasons=['winter','spring','summer','fall']  #
+seasons=['fall']  #
 #georange=[-116., 35., -114., 37.]
 
 #Center=[46.69,24.70]
