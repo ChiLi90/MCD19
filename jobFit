@@ -19,22 +19,22 @@
 cd /global/home/users/chili/Collocation
 source bin/activate
 
-python FitRecords.py --season winter --loc NO2 --sDom True &
-python FitRecords.py --season spring --loc NO2 --sDom True &
-python FitRecords.py --season summer --loc NO2 --sDom True &
-python FitRecords.py --season fall --loc NO2 --sDom True &
-python FitRecords.py --season winter --loc NO2 --sDom False &
-python FitRecords.py --season spring --loc NO2 --sDom False &
-python FitRecords.py --season summer --loc NO2 --sDom False &
-python FitRecords.py --season fall --loc NO2 --sDom False &
-python FitRecords.py --season winter --loc SO2 --sDom True &
-python FitRecords.py --season spring --loc SO2 --sDom True &
-python FitRecords.py --season summer --loc SO2 --sDom True &
-python FitRecords.py --season fall --loc SO2 --sDom True &
-python FitRecords.py --season winter --loc SO2 --sDom False &
-python FitRecords.py --season spring --loc SO2 --sDom False &
-python FitRecords.py --season summer --loc SO2 --sDom False &
-python FitRecords.py --season fall --loc SO2 --sDom False &
+python FitRecordsall.py --season winter --loc NO2 --sDom True &
+python FitRecordsall.py --season spring --loc NO2 --sDom True &
+python FitRecordsall.py --season summer --loc NO2 --sDom True &
+python FitRecordsall.py --season fall --loc NO2 --sDom True &
+python FitRecordsall.py --season winter --loc NO2 --sDom False &
+python FitRecordsall.py --season spring --loc NO2 --sDom False &
+python FitRecordsall.py --season summer --loc NO2 --sDom False &
+python FitRecordsall.py --season fall --loc NO2 --sDom False &
+python FitRecordsall.py --season winter --loc SO2 --sDom True &
+python FitRecordsall.py --season spring --loc SO2 --sDom True &
+python FitRecordsall.py --season summer --loc SO2 --sDom True &
+python FitRecordsall.py --season fall --loc SO2 --sDom True &
+python FitRecordsall.py --season winter --loc SO2 --sDom False &
+python FitRecordsall.py --season spring --loc SO2 --sDom False &
+python FitRecordsall.py --season summer --loc SO2 --sDom False &
+python FitRecordsall.py --season fall --loc SO2 --sDom False &
 
 wait
 
