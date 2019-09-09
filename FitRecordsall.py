@@ -121,8 +121,8 @@ for ist in np.arange(len(Citys)):   #len(Citys)
     for iwdbin in np.arange(ndirs):
         bincount = 0
         for iwsbin in usewsbins:
-            AOD = ds[varname][:, :, 0, iwdbin] * sfactor
-            Sample = ds['Sample'][:, :, 0, iwdbin]
+            AOD = ds[varname][:, :, iwsbin, iwdbin] * sfactor
+            Sample = ds['Sample'][:, :, iwsbin, iwdbin]
             u10 = ds['u10'][:, :, iwsbin, iwdbin] * 0.001
             v10 = ds['v10'][:, :, iwsbin, iwdbin] * 0.001
 

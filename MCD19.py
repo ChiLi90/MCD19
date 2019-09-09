@@ -607,8 +607,8 @@ def RotateAOD(AOD,xlocs,ylocs,x0,y0,**kwargs):
 
     [xr, yr] = Rotate2East(udata[0],vdata[0], xlocs-x0, ylocs-y0)
 
-    ocords = np.stack(((ylocs-y0).flatten(), (xlocs-x0).flatten()), axis=1)
-    rcords = np.stack((yr.flatten(), xr.flatten()), axis=1)
+    ocords = np.stack(((xlocs-x0).flatten(),(ylocs-y0).flatten()), axis=1)
+    rcords = np.stack((xr.flatten(),yr.flatten()), axis=1)
 
     rtAOD = impdata.griddata(rcords, AOD.flatten(), ocords, method='nearest').reshape(AOD.shape)
     # AOD[AOD<=0]=np.nan

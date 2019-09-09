@@ -653,7 +653,7 @@ def ExamFit(file,Pardicts,GoodR):
     xmax=linNo-totalcount-nheader-3
 
 
-    Fitdata=np.chararray([linNo-nheader,2*ndirs+1],itemsize=10)
+    #Fitdata=np.chararray([linNo-nheader,2*ndirs+1],itemsize=10)
     Fitdata = np.genfromtxt(file,dtype='str',skip_header=2)
 
 
