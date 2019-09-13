@@ -152,7 +152,7 @@ def EMGFit(x,data,samplewd,minx0,nSample,**kwargs):
                     bounds.lb[2] = fixxsc
                     bounds.ub[2] = fixxsc
 
-                lconstr = LinearConstraint([0, 1, 1, 0, 0], -np.inf, x[-1])
+                lconstr = LinearConstraint([[0, 1, 1, 1, 0],[0,1,0,-1,0]], [-np.inf,0.], [x[-1],np.inf])
                 nlconstr = NonlinearConstraint(EMGNLConstr1, -np.inf, 20.)
                 # args = {'x0': x[0], 'xca': fixxca, 'xcc': fixxcc}
                 # nlconstr = NonlinearConstraint(EMANLConstr2, -np.inf, 0.)
@@ -339,9 +339,15 @@ def EMAFit(x,data,samplewd,minx0,nSample,**kwargs):
                     bounds.ub[0]=0.
 
 
-                lconstmat=[[0, 0, 1, 0, 1, 0, 0, 0, 0], [0, 0, 0, 1, 0, 1, 0, 0, 0],[0,0,1,-1,0,0,0,0,0]]
-                lconstmin=[-np.inf, -np.inf,0]
-                lconstmax=[x[-1], x[-1],np.inf]
+                #xsca+xa+sigmaa<x[-1]
+                #xscc+xc+sigmac<x[-1]
+                #xa>xc
+                #xa>sigmaa
+                #xc>sigmac
+                lconstmat=[[0, 0, 1, 0, 1, 0, 1, 0, 0], [0, 0, 0, 1, 0, 1, 0, 1, 0],[0,0,1,-1,0,0,0,0,0]\
+                           ,[0,0,1,0,0,0,-1,0,0],[0,0,0,1,0,0,0,-1,0]]
+                lconstmin=[-np.inf, -np.inf,0.,0.,0.]
+                lconstmax=[x[-1], x[-1],np.inf,np.inf,np.inf]
 
 
 
@@ -635,6 +641,12 @@ def mapcount(filename):
         lines += 1
     f.close()
     return lines
+
+def calcErrIntV(value,stddev,ndata,nfit,othervalue,otherstd):
+
+
+
+
 
 def ExamFit(file,Pardicts,GoodR):
 
