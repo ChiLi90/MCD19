@@ -642,7 +642,7 @@ def mapcount(filename):
     f.close()
     return lines
 
-def calcErrIntV(value,stddev,ndata,nfit,othervalue,otherstd):
+#def calcErrIntV(value,stddev,ndata,nfit,othervalue,otherstd):
 
 
 
