@@ -5,6 +5,7 @@ from lmfit import minimize,  Parameters, report_fit
 from scipy.stats.stats import pearsonr
 from pyDOE import lhs
 from scipy.stats.distributions import norm
+from scipy.stats import t
 import mmap
 from scipy.optimize import minimize as scipyminimize
 from scipy.optimize import Bounds, LinearConstraint, NonlinearConstraint, leastsq
@@ -642,8 +643,15 @@ def mapcount(filename):
     f.close()
     return lines
 
-#def calcErrIntV(value,stddev,ndata,nfit,othervalue,otherstd):
+#calculate 95% CI of fitted parameters
+def calcErrIntV(value,stddev,ndata,nfit,othererr):
 
+    fiterr=stddev*t.ppf(0.975, ndata-nfit)/np.sqrt(nfit)
+
+    totalsqerr=(fiterr/value)**2+np.total(othererr**2)
+
+
+    return value*np.sqrt(totalsqerr)
 
 
 
@@ -711,6 +719,7 @@ def ExamFit(file,Pardicts,GoodR):
 
         if startdict==True:
             dirDict['ws'] = np.float(Fitdata[xstart, idir * 2 + 1])
+            dirDict['wsstd'] = np.float(Fitdata[xstart, idir * 2 + 2])
             if startrec==False:
                 FitDict=dict()
                 startrec=True

@@ -26,8 +26,8 @@ if not os.path.exists(outdir):
         os.makedirs(outdir)
 
 complete=0.3
-wsbin=[1.5,4.,8.] #m/s
-seasons=['fall']  #
+wsbin=[3.] #m/s
+seasons=['winter','spring','summer','fall']  #
 #georange=[-116., 35., -114., 37.]
 
 #Center=[46.69,24.70]
@@ -56,11 +56,12 @@ for h in hs:
 
 
                 if MetSum == True:
-                    [accumAOD, accumNo, accumu10, accumv10,accumtp,accumtcc, hvLat, hvLon, totalNo] = \
+                    [accumAOD,accumsqAOD, accumNo, accumu10, accumv10, accumsqw10, \
+                     accumtp,accumtcc, hvLat, hvLon, totalNo] = \
                         MCD19.AccumAOD(Aerdir, strhv, startdate, enddate, wsbins=wsbin, season=season, wdbins=True, \
                                        MetSum=MetSum, wsgrid=True, samplewd=samplewd)  # ,wsgrid=True , limit=georange
                 else:
-                    [accumAOD, accumNo, hvLat, hvLon, totalNo] = \
+                    [accumAOD, accumsqAOD, accumNo, hvLat, hvLon, totalNo] = \
                         MCD19.AccumAOD(Aerdir, strhv, startdate, enddate, wsbins=wsbin, season=season, wdbins=True, \
                                        wsgrid=True,samplewd=samplewd)  # ,wsgrid=True , limit=georange
 
@@ -93,6 +94,10 @@ for h in hs:
                 outdata.units = 'unitless'
                 outdata[:] = np.round(accumAOD * 1000.).astype(int)
 
+                outdata = dso.createVariable('AODsq_' + stryear, np.int, ('x', 'y', 'wsbin', 'wdbin'))
+                outdata.units = 'unitless'
+                outdata[:] = np.round(accumsqAOD * 10000.).astype(int)   #the square variable needs more decimals
+
                 if MetSum == True:
                     outdata = dso.createVariable('u10_' + stryear, np.int, ('x', 'y', 'wsbin', 'wdbin'))
                     outdata.units = 'm/s'
@@ -101,6 +106,10 @@ for h in hs:
                     outdata = dso.createVariable('v10_' + stryear, np.int, ('x', 'y', 'wsbin', 'wdbin'))
                     outdata.units = 'm/s'
                     outdata[:] = np.round(accumv10 * 1000.).astype(int)
+
+                    outdata = dso.createVariable('w10sq_' + stryear, np.int, ('x', 'y', 'wsbin', 'wdbin'))
+                    outdata.units = 'm2/s2'
+                    outdata[:] = np.round(accumsqw10 * 10000.).astype(int)  #the square variable needs more decimals
 
                     outdata = dso.createVariable('tcc_' + stryear, np.int, ('x', 'y', 'wsbin', 'wdbin'))
                     outdata.units = 'unitless'

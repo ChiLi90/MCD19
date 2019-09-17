@@ -175,12 +175,14 @@ def AccumAOD(Aerdir, strhv, start, end,**kwargs):
 
                 nx,ny=AODob.shape
                 accumAOD = np.zeros([nx,ny,nwsbin,nwdbin])
+                accumsqAOD = np.zeros([nx, ny, nwsbin, nwdbin])
                 accumNo = np.zeros([nx,ny,nwsbin,nwdbin], dtype=int)
 
                 if ('MetSum' in kwargs):
                     if (kwargs['MetSum']==True):
                         accumu10 = np.zeros([nx, ny, nwsbin, nwdbin])
                         accumv10 = np.zeros([nx, ny, nwsbin, nwdbin])
+                        accumsqw10 = np.zeros([nx, ny, nwsbin, nwdbin])
                         accumtp = np.zeros([nx, ny, nwsbin, nwdbin])
                         accumtcc = np.zeros([nx, ny, nwsbin, nwdbin])
 
@@ -259,12 +261,14 @@ def AccumAOD(Aerdir, strhv, start, end,**kwargs):
 
                         w10=np.sqrt(u10**2+v10**2)
                         binAOD=np.zeros([nx,ny,nwsbin,nwdbin])
+                        binsqAOD=np.zeros([nx,ny,nwsbin,nwdbin])
                         binNo=np.zeros([nx,ny,nwsbin,nwdbin],dtype=int)
 
                         if ('MetSum' in kwargs):
                             if (kwargs['MetSum'] == True):
                                 binu10 = np.zeros([nx, ny, nwsbin,nwdbin])
                                 binv10 = np.zeros([nx, ny, nwsbin,nwdbin])
+                                binsqw10 = np.zeros([nx, ny, nwsbin,nwdbin])
                                 bintp = np.zeros([nx, ny, nwsbin,nwdbin])
                                 bintcc = np.zeros([nx, ny, nwsbin,nwdbin])
 
@@ -283,42 +287,50 @@ def AccumAOD(Aerdir, strhv, start, end,**kwargs):
                             for idbin in np.arange(nwdbin):
 
                                 ibinAOD = np.zeros([nx, ny])
+                                ibinsqAOD=np.zeros([nx, ny])
                                 ibinNo = np.zeros([nx, ny], dtype=int)
 
                                 if ('MetSum' in kwargs):
                                     if (kwargs['MetSum'] == True):
                                         ibinu10 = np.zeros([nx, ny])
                                         ibinv10 = np.zeros([nx, ny])
+                                        ibinsqw10=np.zeros([nx, ny])
                                         ibintp = np.zeros([nx, ny])
                                         ibintcc = np.zeros([nx, ny])
 
                                 wsliminds = ((AODob > 0) & (w10 >= minws) & (w10 < maxws) & (wdob==idbin)).nonzero()
 
                                 ibinAOD[wsliminds] = AODob[wsliminds]
+                                ibinsqAOD[wsliminds] = AODob[wsliminds]**2
                                 ibinNo[wsliminds] = 1
 
                                 binAOD[:, :, ibin,idbin] = ibinAOD
+                                binsqAOD[:, :, ibin, idbin] = ibinsqAOD
                                 binNo[:, :, ibin,idbin] = ibinNo
 
                                 if ('MetSum' in kwargs):
                                     if (kwargs['MetSum'] == True):
                                         ibinu10[wsliminds] = u10[wsliminds]
                                         ibinv10[wsliminds] = v10[wsliminds]
+                                        ibinsqw10[wsliminds] = u10[wsliminds]**2+v10[wsliminds]**2
                                         ibintp[wsliminds] = tp[wsliminds]
                                         ibintcc[wsliminds] = tcc[wsliminds]
 
                                         binu10[:, :, ibin,idbin] = ibinu10
                                         binv10[:, :, ibin,idbin] = ibinv10
+                                        binsqw10[:, :, ibin,idbin] = ibinsqw10
                                         bintcc[:, :, ibin, idbin] = ibintcc
                                         bintp[:, :, ibin, idbin] = ibintp
 
 
                         accumAOD = accumAOD + binAOD
+                        accumsqAOD=accumsqAOD+binsqAOD
                         accumNo = accumNo + binNo
                         if ('MetSum' in kwargs):
                             if (kwargs['MetSum'] == True):
                                 accumu10 = accumu10 + binu10
                                 accumv10 = accumv10 + binv10
+                                accumsqw10=accumsqw10+binsqw10
                                 accumtp = accumtp + bintp
                                 accumtcc = accumtcc + bintcc
 
@@ -341,28 +353,34 @@ def AccumAOD(Aerdir, strhv, start, end,**kwargs):
 
             if wsgridflag==False:
                 binAOD = np.zeros([nx, ny])
+                binsqAOD=np.zeros([nx, ny])
                 binNo = np.zeros([nx, ny],dtype=int)
 
                 bininds = (AODob > 0).nonzero()
                 binAOD[bininds] = AODob[bininds]
+                binsqAOD[bininds]=AODob[bininds]**2
                 binNo[bininds] = 1
                 accumAOD[:, :, iwsbin, iwdbin] = accumAOD[:, :, iwsbin, iwdbin] + binAOD
+                accumsqAOD[:, :, iwsbin, iwdbin] = accumsqAOD[:, :, iwsbin, iwdbin] + binsqAOD
                 accumNo[:, :, iwsbin, iwdbin] = accumNo[:, :, iwsbin, iwdbin] + binNo
 
                 if ('MetSum' in kwargs):
                     if (kwargs['MetSum'] == True):
                         binu10 = np.zeros([nx, ny])
                         binv10 = np.zeros([nx, ny])
+                        binsqw10=np.zeros([nx, ny])
                         bintp = np.zeros([nx, ny])
                         bintcc = np.zeros([nx, ny])
 
                         binu10[bininds] = u10[bininds]
                         binv10[bininds] = v10[bininds]
+                        binsqw10[bininds] = u10[bininds]**2+v10[bininds]**2
                         bintp[bininds] = tp[bininds]
                         bintcc[bininds] = tcc[bininds]
 
                         accumu10[:, :, iwsbin, iwdbin] = accumu10[:, :, iwsbin, iwdbin] + binu10
                         accumv10[:, :, iwsbin, iwdbin] = accumv10[:, :, iwsbin, iwdbin] + binv10
+                        accumsqw10[:, :, iwsbin, iwdbin]=accumsqw10[:, :, iwsbin, iwdbin]+binsqw10
                         accumtp[:, :, iwsbin, iwdbin] = accumtp[:, :, iwsbin, iwdbin] + bintp
                         accumtcc[:, :, iwsbin, iwdbin] = accumtcc[:, :, iwsbin, iwdbin] + bintcc
 
@@ -382,16 +400,20 @@ def AccumAOD(Aerdir, strhv, start, end,**kwargs):
         Lat = rebin(Lat,[newx,newy])
         Lon = rebin(Lon, [newx, newy])
         naccumAOD=np.zeros([newx,newy,nwsbin,nwdbin])
+        naccumsqAOD=np.zeros([newx,newy,nwsbin,nwdbin])
         naccumNo=np.zeros([newx,newy,nwsbin,nwdbin])
         for ix in np.arange(nwdbin):
             for iy in np.arange(nwsbin):
                 naccumAOD[:,:,iy,ix] = rebin(accumAOD[:,:,iy,ix],[newx,newy], Add = True)
+                naccumsqAOD[:, :, iy, ix] = rebin(accumsqAOD[:, :, iy, ix], [newx, newy], Add=True)
                 naccumNo[:, :, iy, ix] = rebin(accumNo[:, :, iy, ix], [newx, newy], Add=True)
 
         accumAOD=naccumAOD
+        accumsqAOD=naccumsqAOD
         accumNo=naccumNo
 
     accumAOD[accumNo > 0] = accumAOD[accumNo > 0] / accumNo[accumNo > 0]
+    accumsqAOD[accumNo > 0] = accumsqAOD[accumNo > 0] / accumNo[accumNo > 0]
     accumAOD[accumAOD<=0]=-999.
     accumNo[accumNo<=0]=-999
 
@@ -400,35 +422,40 @@ def AccumAOD(Aerdir, strhv, start, end,**kwargs):
             if "samplewd" in kwargs:
                 naccumu10 = np.zeros([newx, newy, nwsbin, nwdbin])
                 naccumv10 = np.zeros([newx, newy, nwsbin, nwdbin])
+                naccumsqw10=np.zeros([newx, newy, nwsbin, nwdbin])
                 naccumtp = np.zeros([newx, newy, nwsbin, nwdbin])
                 naccumtcc = np.zeros([newx, newy, nwsbin, nwdbin])
                 for ix in np.arange(nwdbin):
                     for iy in np.arange(nwsbin):
                         naccumu10[:, :, iy, ix] = rebin(accumu10[:, :, iy, ix], [newx, newy], Add=True)
                         naccumv10[:, :, iy, ix] = rebin(accumv10[:, :, iy, ix], [newx, newy], Add=True)
+                        naccumsqw10[:, :, iy, ix] = rebin(accumsqw10[:, :, iy, ix], [newx, newy], Add=True)
                         naccumtp[:, :, iy, ix] = rebin(accumtp[:, :, iy, ix], [newx, newy], Add=True)
                         naccumtcc[:, :, iy, ix] = rebin(accumtcc[:, :, iy, ix], [newx, newy], Add=True)
 
                 accumu10=naccumu10
                 accumv10=naccumv10
+                accumsqw10=naccumsqw10
                 accumtp=naccumtp
                 accumtcc=naccumtcc
 
             accumu10[accumNo > 0] = accumu10[accumNo > 0] / accumNo[accumNo > 0]
             accumv10[accumNo > 0] = accumv10[accumNo > 0] / accumNo[accumNo > 0]
+            accumsqw10[accumNo > 0] = accumsqw10[accumNo > 0] / accumNo[accumNo > 0]
             accumtp[accumNo > 0] = accumtp[accumNo > 0] / accumNo[accumNo > 0]
             accumtcc[accumNo > 0] = accumtcc[accumNo > 0] / accumNo[accumNo > 0]
 
             accumu10[accumNo <= 0] = -999.
             accumv10[accumNo <= 0] = -999.
+            accumsqw10[accumNo <= 0]=-999.
             accumtp[accumNo <= 0] = -999.
             accumtcc[accumNo <= 0] = -999.
 
     if ('MetSum' in kwargs):
         if (kwargs['MetSum'] == True):
-            return [accumAOD, accumNo, accumu10, accumv10, accumtp,accumtcc,Lat, Lon, totalNo]
+            return [accumAOD,accumsqAOD, accumNo, accumu10, accumv10, accumsqw10, accumtp,accumtcc,Lat, Lon, totalNo]
 
-    return [accumAOD, accumNo, Lat, Lon, totalNo]
+    return [accumAOD,accumsqAOD, accumNo, Lat, Lon, totalNo]
 
 def GetWindSpeed(Lons,Lats,obtime):
 
