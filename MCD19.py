@@ -634,17 +634,21 @@ def RotateAOD(AOD,xlocs,ylocs,x0,y0,**kwargs):
 
     [xr, yr] = Rotate2East(udata[0],vdata[0], xlocs-x0, ylocs-y0)
 
+    if 'ToOrigin' in kwargs:
+        if kwargs['ToOrigin']==False:
+            return [xr + x0, yr + y0]
 
-    ocords = np.stack(((xlocs-x0).flatten(),(ylocs-y0).flatten()), axis=1)
-    rcords = np.stack((xr.flatten(),yr.flatten()), axis=1)
+    ocords = np.stack(((xlocs - x0).flatten(), (ylocs - y0).flatten()), axis=1)
+    rcords = np.stack((xr.flatten(), yr.flatten()), axis=1)
 
     rtAOD = impdata.griddata(rcords, AOD.flatten(), ocords, method='linear').reshape(AOD.shape)
     # AOD[AOD<=0]=np.nan
     # rtAOD[rtAOD<=0]=np.nan
 
-    print (rcords.shape,AOD.shape,rtAOD.shape)
+    return [rtAOD, udata[0], vdata[0]]
 
-    return [rtAOD,udata[0],vdata[0]]
+
+
 
 # rotate the fields of data (e.g. AOD according to x0,y0)
 # x0, x coordinate (longitude) of the source

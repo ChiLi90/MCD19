@@ -21,7 +21,7 @@ end=args.end
 
 Aerdir = '/global/scratch/chili/MCD19A2.006/'
 
-outdir = '/global/scratch/chili/AvgMCD/SepWs/MWS/'
+outdir = '/global/scratch/chili/AvgMCD/SepWs/Sqr/'
 if not os.path.exists(outdir):
         os.makedirs(outdir)
 

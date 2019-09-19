@@ -16,8 +16,8 @@ hs=np.arange(5)+8
 vs=np.arange(2)+4
 #strhvs=['h08v04','h09v04']   #,'h08v05','h09v04','h09v05','h10v04','h10v05','h11v04','h11v05','h12v04','h12v05'
 seasons = ['winter','spring','summer','fall']
-varnames=['AOD','u10','v10','tp','tcc']
-units=['unitless','m/s','m/s','um','unitless']
+varnames=['AOD','AODsq','u10','v10','w10sq','tp','tcc']
+units=['unitless','unitless','m/s','m/s','m2/s2','um','unitless']
 varNo='Sample'
 
 parser=argparse.ArgumentParser()
