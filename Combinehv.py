@@ -192,7 +192,7 @@ for season in seasons:
 
         outdata = dso.createVariable(varname, np.int, ('x', 'y', 'wsbin', 'wdbin'))
         outdata.units = units[ivar]
-        outdata[:] = comdata.astype(int)
+        outdata[:] = np.round(comdata).astype(int)
 
     dso.close()
 
