@@ -4,7 +4,6 @@ import MCD19
 import numpy as np
 from netCDF4 import Dataset
 import os
-import glob
 import argparse
 
 parser=argparse.ArgumentParser()
@@ -19,15 +18,15 @@ vs=args.v
 start=args.start
 end=args.end
 
-Aerdir = '/global/scratch/chili/MCD19A2.006/'
+Aerdir = '/Volumes/homes/chili/MCD19A2.006/'
 
-outdir = '/global/scratch/chili/AvgMCD/SepWs/Sqr/'
+outdir = '/Volumes/homes/chili/AvgMCD/SepWs/test/'
 if not os.path.exists(outdir):
         os.makedirs(outdir)
 
 complete=0.3
 wsbin=[3.] #m/s
-seasons=['winter','spring','summer','fall']  #
+seasons=['winter']  # ,'spring','summer','fall'
 #georange=[-116., 35., -114., 37.]
 
 #Center=[46.69,24.70]
@@ -52,7 +51,7 @@ for h in hs:
 
                 stryear = '{:10.0f}'.format(year).strip()
                 startdate = year * 1000 + 1
-                enddate = year * 1000 + 366
+                enddate = year * 1000 + 1
 
 
                 if MetSum == True:

@@ -90,6 +90,8 @@ def AccumAOD(Aerdir, strhv, start, end,**kwargs):
 
         #for this date, at most only one file is found
         Aerfile = glob.glob(Aerdir + stryymm+'/' + 'MCD19A2.A' + strdate + '.' + strhv + '.006' + '*.hdf')
+        print (Aerdir + stryymm+'/' + 'MCD19A2.A' + strdate + '.' + strhv + '.006' + '*.hdf')
+        print (Aerfile)
         if len(Aerfile)==0:
             print("No file found for date: " + strdate)
             continue
@@ -389,7 +391,7 @@ def AccumAOD(Aerdir, strhv, start, end,**kwargs):
     if totalNo<1:
         if ('MetSum' in kwargs):
             if (kwargs['MetSum'] == True):
-                return [None,None,None,None,None,None,None,None,None]
+                return [None,None,None,None,None,None,None,None,None,None,None]
 
         return [None,None,None,None,None]
 
