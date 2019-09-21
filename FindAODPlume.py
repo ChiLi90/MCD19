@@ -3,13 +3,14 @@ import argparse
 import glob
 from netCDF4 import Dataset
 import MCD19
+import os
 
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--a", type=float)
 parser.add_argument("--b", type=float)
 
-#e.g. a=15, b=20
+#e.g. a=15, b=20  a roughly represents the "width" of the source (i.e. sigma), b is the distance along the wind to integrate for both upwind and downwind
 # parser.add_argument("--v", type=int)
 parser.add_argument('--start', type=int)
 parser.add_argument('--end', type=int)
@@ -19,9 +20,15 @@ args = parser.parse_args()
 # vs = args.v
 startyr = args.start
 endyr = args.end
+a = args.a    #
+b = args.b
 
-indir = '/Users/chili/Downloads/AvgMCD/SepWs/Sqr/Combined/'
-outdir = '/Users/chili/Downloads/AvgMCD/SepWs/Plumes/'
+indir='/global/scratch/chili/AvgMCD/SepWs/Sqr/Combined/'
+outdir='/global/scratch/chili/AvgMCD/SepWs/Plumes/a'+'{:10.0f}'.format(a).strip()+'b'+'{:10.0f}'.format(b).strip()+'/'
+
+if not os.path.exists(outdir):
+    os.makedirs(outdir)
+
 
 strse = '{:10.0f}'.format(startyr).strip() + '-' + '{:10.0f}'.format(endyr).strip()
 seasons = ['winter', 'spring', 'summer', 'fall']
@@ -31,9 +38,9 @@ ndirs = len(Dirs)
 wsinds = [1]
 
 # to be modified and tested
-a = args.a    # a and b1 roughly represents the "width" of the source (i.e. sigma)
+
 b1 = a
-b2 = args.b+b1
+b2 = b+b1
 complete = 0.667  # at least 2/3 of grids with available data for SNR calculation
 
 Rearth = 6373.0
