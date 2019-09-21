@@ -9,8 +9,8 @@ from netCDF4 import Dataset
 import MCD19
 import glob
 
-indir='/global/scratch/chili/AvgMCD/SepWs/'
-outdir='/global/scratch/chili/AvgMCD/SepWs/MWS/'
+indir='/global/scratch/chili/AvgMCD/SepWs/Sqr/'
+outdir='/global/scratch/chili/AvgMCD/SepWs/Sqr/'
 #strhvs = ['h26v05','h26v06','h27v05','h27v06','h28v05','h28v06']
 hs=np.arange(5)+8
 vs=np.arange(2)+4

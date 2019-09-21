@@ -14,6 +14,7 @@ parser.add_argument("--b", type=float)
 # parser.add_argument("--v", type=int)
 parser.add_argument('--start', type=int)
 parser.add_argument('--end', type=int)
+parser.add_argument('--season')
 
 args = parser.parse_args()
 # hs = args.h
@@ -31,7 +32,7 @@ if not os.path.exists(outdir):
 
 
 strse = '{:10.0f}'.format(startyr).strip() + '-' + '{:10.0f}'.format(endyr).strip()
-seasons = ['winter', 'spring', 'summer', 'fall']
+seasons = [args.season]
 Dirs = ['W', 'SW', 'S', 'SE', 'E', 'NE', 'N', 'NW']
 Vectors = np.array([[1.414, 0], [1, 1], [0, 1.414], [-1, 1], [-1.414, 0], [-1, 1], [0, -1.414], [1, -1]])
 ndirs = len(Dirs)

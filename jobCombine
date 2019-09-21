@@ -4,7 +4,7 @@
 #SBATCH --account=co_aiolos
 #SBATCH --qos=aiolos_savio3_normal
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=1
+#SBATCH --ntasks-per-node=13
 # Wall clock limit:
 #SBATCH --time=1:00:00
 # Mail me for any notification
@@ -18,4 +18,13 @@
 
 cd /global/home/users/chili/Collocation
 source bin/activate
-python Combinehv.py --start 2001 --end 2013
+
+for year in $(seq -w 2001 2013); do
+	{
+		python Combinehv.py --start $year --end $year
+	
+	}&
+
+
+done
+wait
