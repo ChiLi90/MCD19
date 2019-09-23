@@ -19,7 +19,7 @@
 cd /global/home/users/chili/Collocation
 source bin/activate
 
-for year in $(seq -w 2001 2013); do
+for year in $(seq -w 2014 2015); do
 	{
 		python Combinehv.py --start $year --end $year
 	

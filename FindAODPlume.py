@@ -9,7 +9,8 @@ import os
 parser = argparse.ArgumentParser()
 parser.add_argument("--a", type=float)
 parser.add_argument("--b", type=float)
-
+parser.add_argument("--chunckx",type=int)
+parser.add_argument("--chuncky",type=int)
 #e.g. a=15, b=20  a roughly represents the "width" of the source (i.e. sigma), b is the distance along the wind to integrate for both upwind and downwind
 # parser.add_argument("--v", type=int)
 parser.add_argument('--start', type=int)
@@ -19,12 +20,18 @@ parser.add_argument('--season')
 args = parser.parse_args()
 # hs = args.h
 # vs = args.v
+chunckx=args.chunckx   #0 1
+chuncky=args.chuncky   #0 1 2 3 4
+chunckInterval=120
+strchk = '{:10.0f}'.format(chunckx).strip()+ '{:10.0f}'.format(chuncky).strip()
+
+
 startyr = args.start
 endyr = args.end
 a = args.a    #
 b = args.b
 
-indir='/global/scratch/chili/AvgMCD/SepWs/Sqr/Combined/'
+indir='/global/scratch/chili/AvgMCD/SepWs/Sqr/'
 outdir='/global/scratch/chili/AvgMCD/SepWs/Plumes/a'+'{:10.0f}'.format(a).strip()+'b'+'{:10.0f}'.format(b).strip()+'/'
 
 if not os.path.exists(outdir):
@@ -105,7 +112,7 @@ for season in seasons:
         continue
 
     [nx, ny, nws, nwd] = accumAOD.shape
-    outfile = outdir  + season + "." + strse + ".SNR.nc"
+    outfile = outdir  + season + '.' + strse +'.'+strchk+ '.SNR.nc'
     SNR=np.zeros([nx,ny])
 
     dirAODs = np.sum(accumAOD[:,:,wsinds,:],axis=2)*0.001
@@ -115,8 +122,8 @@ for season in seasons:
     outAOD=np.sum(dirAODs,axis=2)
     outNo=np.sum(dirNos,axis=2)
 
-    for ix in np.arange(nx):
-        for iy in np.arange(ny):
+    for ix in np.arange(chunckInterval)+chunckInterval*chunckx:
+        for iy in np.arange(2*chunckInterval)+2*chunckInterval*chuncky:
 
             RtCenter = [Lon[ix, iy], Lat[ix, iy]]
 
