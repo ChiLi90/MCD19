@@ -31,8 +31,8 @@ endyr = args.end
 a = args.a    #
 b = args.b
 
-indir='/global/scratch/chili/AvgMCD/SepWs/Sqr/'
-outdir='/global/scratch/chili/AvgMCD/SepWs/Plumes/a'+'{:10.0f}'.format(a).strip()+'b'+'{:10.0f}'.format(b).strip()+'/'
+indir='/Users/chili/Downloads/AvgMCD/SepWs/Sqr/Combined/'
+outdir='/Users/chili/Downloads/AvgMCD/SepWs/Plumes/a'+'{:10.0f}'.format(a).strip()+'b'+'{:10.0f}'.format(b).strip()+'/'
 
 if not os.path.exists(outdir):
     os.makedirs(outdir)
@@ -56,6 +56,7 @@ Rearth = 6373.0
 for season in seasons:
 
     files = glob.glob(indir + season + '.*.nc')
+
     starts = np.zeros(len(files), dtype=int)
     ends = np.zeros(len(files), dtype=int)
     for ifile in np.arange(len(files)):
@@ -122,8 +123,16 @@ for season in seasons:
     outAOD=np.sum(dirAODs,axis=2)
     outNo=np.sum(dirNos,axis=2)
 
-    for ix in np.arange(chunckInterval)+chunckInterval*chunckx:
-        for iy in np.arange(2*chunckInterval)+2*chunckInterval*chuncky:
+    print (np.max(np.arange(chunckInterval)+chunckInterval*chunckx),\
+           np.min(np.arange(chunckInterval)+chunckInterval*chunckx),\
+           np.max(np.arange(2*chunckInterval)+2*chunckInterval*chuncky),\
+           np.min(np.arange(2*chunckInterval)+2*chunckInterval*chuncky),\
+           nx,ny)
+
+
+
+    for ix in np.arange(chunckInterval)+chunckInterval*chunckx:     #
+        for iy in np.arange(2*chunckInterval)+2*chunckInterval*chuncky:   #
 
             RtCenter = [Lon[ix, iy], Lat[ix, iy]]
 
@@ -204,6 +213,7 @@ for season in seasons:
             # Calculate SNR in Mclinden et al 2016
 
             SNR[ix,iy] = (omegadw - omegauw) / (sigmauw / np.sqrt(sampleuw) + sigmadw / np.sqrt(sampledw))
+            #print(RtCenter, omegauw, omegadw, sigmauw, sigmadw, SNR[ix, iy])
     #
     #         if SNR[ix,iy]>2.:
     #             print(RtCenter,omegauw,omegadw,sigmauw,sigmadw,SNR[ix,iy])
