@@ -26,13 +26,16 @@ chunckInterval=120
 strchk = '{:10.0f}'.format(chunckx).strip()+ '{:10.0f}'.format(chuncky).strip()
 
 
+print("Now we are doing: ")
+print(args)
+
 startyr = args.start
 endyr = args.end
 a = args.a    #
 b = args.b
 
-indir='/Users/chili/Downloads/AvgMCD/SepWs/Sqr/Combined/'
-outdir='/Users/chili/Downloads/AvgMCD/SepWs/Plumes/a'+'{:10.0f}'.format(a).strip()+'b'+'{:10.0f}'.format(b).strip()+'/'
+indir='/global/scratch/chili/AvgMCD/SepWs/Sqr/Combined/'
+outdir='/global/scratch/chili/AvgMCD/SepWs/Plumes/a'+'{:10.0f}'.format(a).strip()+'b'+'{:10.0f}'.format(b).strip()+'/'
 
 if not os.path.exists(outdir):
     os.makedirs(outdir)
