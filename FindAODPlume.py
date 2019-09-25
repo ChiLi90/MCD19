@@ -23,11 +23,11 @@ args = parser.parse_args()
 chunckx=args.chunckx   #0 1
 chuncky=args.chuncky   #0 1 2 3 4
 chunckInterval=120
-strchk = '{:10.0f}'.format(chunckx).strip()+ '{:10.0f}'.format(chuncky).strip()
+strchk ='x'+ '{:10.0f}'.format(chunckx).strip()+'y'+ '{:10.0f}'.format(chuncky).strip()
 
 
 print("Now we are doing: ")
-print(args)
+print(args.season,strchk,args.a,args.b)
 
 startyr = args.start
 endyr = args.end
@@ -118,6 +118,13 @@ for season in seasons:
     [nx, ny, nws, nwd] = accumAOD.shape
     outfile = outdir  + season + '.' + strse +'.'+strchk+ '.SNR.nc'
     SNR=np.zeros([nx,ny])
+    
+    AODuw=np.zeros([nx,ny])
+    AODdw=np.zeros([nx,ny])
+    AODuwsq=np.zeros([nx,ny])
+    AODdwsq=np.zeros([nx,ny])
+    uwSample=np.zeros([nx,ny],dtype=int)
+    dwSample=np.zeros([nx,ny],dtype=int)
 
     dirAODs = np.sum(accumAOD[:,:,wsinds,:],axis=2)*0.001
     dirAODsqs = np.sum(accumAODsq[:,:,wsinds,:],axis=2)*0.0001
@@ -126,11 +133,6 @@ for season in seasons:
     outAOD=np.sum(dirAODs,axis=2)
     outNo=np.sum(dirNos,axis=2)
 
-    print (np.max(np.arange(chunckInterval)+chunckInterval*chunckx),\
-           np.min(np.arange(chunckInterval)+chunckInterval*chunckx),\
-           np.max(np.arange(2*chunckInterval)+2*chunckInterval*chuncky),\
-           np.min(np.arange(2*chunckInterval)+2*chunckInterval*chuncky),\
-           nx,ny)
 
 
 
@@ -206,9 +208,17 @@ for season in seasons:
 
             omegauw = omegauw / sampleuw
             omegadw = omegadw / sampledw
-
             if omegauw >= omegadw:
                 continue
+
+            AODdw[ix,iy]=omegadw
+            AODuw[ix,iy]=omegauw
+            dwSample[ix,iy]=sampledw
+            uwSample[ix,iy]=sampleuw
+
+            AODdwsq[ix,iy]=sigmadw/sampledw
+            AODuwsq[ix,iy]=sigmauw/sampleuw
+
 
             sigmauw = np.sqrt((sigmauw - sampleuw * (omegauw ** 2)) / (sampleuw - 1))
             sigmadw = np.sqrt((sigmadw - sampledw * (omegadw ** 2)) / (sampledw - 1))
@@ -252,10 +262,35 @@ for season in seasons:
     outdata = dso.createVariable('Sample', np.int, ('x', 'y'))
     outdata.units = 'unitless'
     outdata[:] = outNo.astype(int)
+    
+    outdata = dso.createVariable('dwSample', np.int, ('x', 'y'))
+    outdata.units = 'unitless'
+    outdata[:] = dwSample.astype(int)
+    
+    outdata = dso.createVariable('uwSample', np.int, ('x', 'y'))
+    outdata.units = 'unitless'
+    outdata[:] = uwSample.astype(int)
 
-    outdata = dso.createVariable('SNR', np.float, ('x', 'y'))
+    outdata = dso.createVariable('SNR', np.int, ('x', 'y'))
     outdata.units = 'unitless'
     outdata[:] = np.round(SNR*1000).astype(int)
+    
+    outdata=dso.createVariable('dwAOD', np.int, ('x', 'y'))
+    outdata.units='unitless'
+    outdata[:]=np.round(AODdw*1000).astype(int)
+    
+    outdata=dso.createVariable('uwAOD', np.int, ('x', 'y'))
+    outdata.units='unitless'
+    outdata[:]=np.round(AODuw*1000).astype(int)
+    
+    outdata=dso.createVariable('dwAODsq', np.int, ('x', 'y'))
+    outdata.units='unitless'
+    outdata[:]=np.round(AODdwsq*10000).astype(int)
+    
+    outdata=dso.createVariable('uwAODsq', np.int, ('x', 'y'))
+    outdata.units='unitless'
+    outdata[:]=np.round(AODuwsq*10000).astype(int)
+
 
     dso.close()
 
