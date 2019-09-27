@@ -137,7 +137,7 @@ for season in seasons:
 
 
     for ix in np.arange(chunckInterval)+chunckInterval*chunckx:     #
-        for iy in np.arange(2*chunckInterval)+2*chunckInterval*chuncky:   #
+        for iy in np.arange(chunckInterval)+chunckInterval*chuncky:   #
 
             RtCenter = [Lon[ix, iy], Lat[ix, iy]]
 
