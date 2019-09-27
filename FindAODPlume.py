@@ -34,8 +34,8 @@ endyr = args.end
 a = args.a    #
 b = args.b
 
-indir='/global/scratch/chili/AvgMCD/SepWs/Sqr/Combined/'
-outdir='/global/scratch/chili/AvgMCD/SepWs/Plumes/a'+'{:10.0f}'.format(a).strip()+'b'+'{:10.0f}'.format(b).strip()+'/'
+indir='/Users/chili/Downloads/AvgMCD/SepWs/Sqr/Combined/'
+outdir='/Users/chili/Downloads/AvgMCD/SepWs/Plumes/a'+'{:10.0f}'.format(a).strip()+'b'+'{:10.0f}'.format(b).strip()+'/'
 
 if not os.path.exists(outdir):
     os.makedirs(outdir)
@@ -117,14 +117,14 @@ for season in seasons:
 
     [nx, ny, nws, nwd] = accumAOD.shape
     outfile = outdir  + season + '.' + strse +'.'+strchk+ '.SNR.nc'
-    SNR=np.zeros([nx,ny])
+    SNR=np.zeros([chunckInterval,chunckInterval])
     
-    AODuw=np.zeros([nx,ny])
-    AODdw=np.zeros([nx,ny])
-    AODuwsq=np.zeros([nx,ny])
-    AODdwsq=np.zeros([nx,ny])
-    uwSample=np.zeros([nx,ny],dtype=int)
-    dwSample=np.zeros([nx,ny],dtype=int)
+    AODuw=np.zeros([chunckInterval,chunckInterval])
+    AODdw=np.zeros([chunckInterval,chunckInterval])
+    AODuwsq=np.zeros([chunckInterval,chunckInterval])
+    AODdwsq=np.zeros([chunckInterval,chunckInterval])
+    uwSample=np.zeros([chunckInterval,chunckInterval],dtype=int)
+    dwSample=np.zeros([chunckInterval,chunckInterval],dtype=int)
 
     dirAODs = np.sum(accumAOD[:,:,wsinds,:],axis=2)*0.001
     dirAODsqs = np.sum(accumAODsq[:,:,wsinds,:],axis=2)*0.0001
@@ -211,13 +211,13 @@ for season in seasons:
             if omegauw >= omegadw:
                 continue
 
-            AODdw[ix,iy]=omegadw
-            AODuw[ix,iy]=omegauw
-            dwSample[ix,iy]=sampledw
-            uwSample[ix,iy]=sampleuw
+            AODdw[ix-chunckInterval*chunckx,iy-chunckInterval*chuncky]=omegadw
+            AODuw[ix-chunckInterval*chunckx,iy-chunckInterval*chuncky]=omegauw
+            dwSample[ix-chunckInterval*chunckx,iy-chunckInterval*chuncky]=sampledw
+            uwSample[ix-chunckInterval*chunckx,iy-chunckInterval*chuncky]=sampleuw
 
-            AODdwsq[ix,iy]=sigmadw/sampledw
-            AODuwsq[ix,iy]=sigmauw/sampleuw
+            AODdwsq[ix-chunckInterval*chunckx,iy-chunckInterval*chuncky]=sigmadw/sampledw
+            AODuwsq[ix-chunckInterval*chunckx,iy-chunckInterval*chuncky]=sigmauw/sampleuw
 
 
             sigmauw = np.sqrt((sigmauw - sampleuw * (omegauw ** 2)) / (sampleuw - 1))
@@ -225,7 +225,8 @@ for season in seasons:
 
             # Calculate SNR in Mclinden et al 2016
 
-            SNR[ix,iy] = (omegadw - omegauw) / (sigmauw / np.sqrt(sampleuw) + sigmadw / np.sqrt(sampledw))
+            SNR[ix-chunckInterval*chunckx,iy-chunckInterval*chuncky] = \
+                (omegadw - omegauw) / (sigmauw / np.sqrt(sampleuw) + sigmadw / np.sqrt(sampledw))
             #print(RtCenter, omegauw, omegadw, sigmauw, sigmadw, SNR[ix, iy])
     #
     #         if SNR[ix,iy]>2.:
@@ -244,24 +245,28 @@ for season in seasons:
     outAOD[outNo<=0]=np.nan
 
     dso = Dataset(outfile, mode='w', format='NETCDF4')
-    dso.createDimension('x', nx)
-    dso.createDimension('y', ny)
+    dso.createDimension('x', chunckInterval)
+    dso.createDimension('y', chunckInterval)
 
     outdata = dso.createVariable('Lat', np.float32, ('x', 'y'))
     outdata.units = 'degree'
-    outdata[:] = Lat
+    outdata[:] = Lat[chunckInterval*chunckx:chunckInterval*(chunckx+1),\
+                 chunckInterval*chuncky:chunckInterval*(chuncky+1)]
 
     outdata = dso.createVariable('Lon', np.float32, ('x', 'y'))
     outdata.units = 'degree'
-    outdata[:] = Lon
+    outdata[:] = Lon[chunckInterval*chunckx:chunckInterval*(chunckx+1),\
+                 chunckInterval*chuncky:chunckInterval*(chuncky+1)]
 
     outdata = dso.createVariable('AOD', np.int, ('x', 'y'))
     outdata.units = 'unitless'
-    outdata[:] = np.round(outAOD*1000).astype(int)
+    outdata[:] = np.round(outAOD[chunckInterval*chunckx:chunckInterval*(chunckx+1),\
+                 chunckInterval*chuncky:chunckInterval*(chuncky+1)]*1000).astype(int)
 
     outdata = dso.createVariable('Sample', np.int, ('x', 'y'))
     outdata.units = 'unitless'
-    outdata[:] = outNo.astype(int)
+    outdata[:] = outNo[chunckInterval*chunckx:chunckInterval*(chunckx+1),\
+                 chunckInterval*chuncky:chunckInterval*(chuncky+1)].astype(int)
     
     outdata = dso.createVariable('dwSample', np.int, ('x', 'y'))
     outdata.units = 'unitless'
