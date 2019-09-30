@@ -8,15 +8,17 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--nx", type=int)
 parser.add_argument("--ny", type=int)
 parser.add_argument('--season')
+parser.add_argument('--strab')
 
 args = parser.parse_args()
 
 season=args.season  #0 1
 nchx=args.nx
 nchy=args.ny
+strab=args.strab
 
 strse='2001-2015'
-wdir='/global/scratch/chili/AvgMCD/SepWs/Plumes/a50b65/'
+wdir='/global/scratch/chili/AvgMCD/SepWs/Plumes/'+strab+'/'
 outfile=wdir+season+'.'+strse+'.SNR.nc'
 
 filecount=0

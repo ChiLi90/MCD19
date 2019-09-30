@@ -8,7 +8,7 @@ import argparse
 import glob
 import os
 
-def sortSum2D(dirAOD,dirAODsq,dirw10,dirw10sq,dirNo,dx,dy,xmin,xmax,y,samplewd):
+def sortSum2D(dirAOD,dirAODsq,dirw10,dirw10sq,dirNo,dx,dy,xmin,xmax,y,samplewd,minsample):
 
     #data has the same dimension as dx dy
     sdx=np.round(dx/samplewd).astype(int)
@@ -34,6 +34,15 @@ def sortSum2D(dirAOD,dirAODsq,dirw10,dirw10sq,dirNo,dx,dy,xmin,xmax,y,samplewd):
                 sitew10[ix, iy] = np.sum(dirw10[inds])
                 sitew10sq[ix, iy] = np.sum(dirw10sq[inds])
                 siteNo[ix,iy]=np.sum(dirNo[inds])
+    
+    nvinds=(siteNo<minsample).nonzero()
+    if np.array(nvinds).size>0:
+	    siteNo[nvinds]=0
+	    siteAOD[nvinds]=0.0
+	    siteAODsq[nvinds]=0.0
+	    sitew10[nvinds]=0.0
+	    sitew10sq[nvinds]=0.0
+
 
     return [siteAOD, siteAODsq, sitew10, sitew10sq, siteNo]
 
@@ -91,7 +100,7 @@ def FitOut(xarray,siteAOD, siteAODsq, sitew10, sitew10sq, siteNo, outfile,minsam
         outF = open(outfile, "w")
 
         header = 'Lat=' + '{:10.2f}'.format(y0).strip() + ', Lon=' + '{:10.2f}'.format(x0).strip()+ \
-                 ', Sample=' + '{:10.2f}'.format(samplewd).strip()+' km'
+			', Sample=' + '{:10.2f}'.format(samplewd).strip()
         outF.write(header)
         outF.write('\n')
         outF.write('{:>11}'.format('x/y,'))
@@ -175,9 +184,9 @@ Rearth = 6373.0
 complete=0.667
 minsample=100
 
-Datadir='/Users/chili/Downloads/AvgMCD/SepWs/Sqr/Combined/'
-sfile='/Users/chili/Downloads/AvgMCD/SepWs/Plumes/a15b20/Sources.txt'
-outdir='/Users/chili/Downloads/AvgMCD/SepWs/Sqr/Records/'
+Datadir='/global/scratch/chili/AvgMCD/SepWs/Sqr/Combined/'
+sfile='/global/scratch/chili/AvgMCD/SepWs/Plumes/a15b20/Sources.txt'
+outdir='/global/scratch/chili/AvgMCD/SepWs/Sqr/Records/'+args.incCalm+'_'+'{:10.0f}'.format(args.xmin).strip()+'/'
 
 if not os.path.exists(outdir):
     os.makedirs(outdir)
@@ -243,7 +252,7 @@ for iloc in np.arange(len(CityLats)):
 
     #record the sum, sum-square, sample and w10 squre of the "rectangle"
     if CombineDirs==True:
-        outfile = outdir + strloc + '.txt'
+        outfile = outdir + strloc +'.' +season+'.txt'
         if os.path.exists(outfile):
             continue
 
@@ -257,7 +266,7 @@ for iloc in np.arange(len(CityLats)):
 
         if CombineDirs==False:
 
-            outfile=outdir+strloc+'.'+Dirs[idir]+'.txt'
+            outfile=outdir+strloc+'.'+Dirs[idir]+'.'+season+'.txt'
             if os.path.exists(outfile):
                 continue
 
@@ -279,7 +288,7 @@ for iloc in np.arange(len(CityLats)):
         if CombineDirs==False:
 
             [siteAOD,siteAODsq,sitew10,sitew10sq,siteNo] = \
-                sortSum2D(dirAOD,dirAODsq,dirw10,dirw10sq,dirNo, dx, dy, xmin, xmax, y, samplewd)
+                sortSum2D(dirAOD,dirAODsq,dirw10,dirw10sq,dirNo, dx, dy, xmin, xmax, y, samplewd,minsample)
             success = FitOut(xarray,siteAOD, siteAODsq, sitew10, sitew10sq, siteNo, outfile,minsample,complete,x0,y0,\
                              samplewd)
             if success == False:
@@ -287,7 +296,7 @@ for iloc in np.arange(len(CityLats)):
         else:
 
             [isiteAOD,isiteAODsq,isitew10,isitew10sq,isiteNo] = \
-                sortSum2D(dirAOD,dirAODsq,dirw10,dirw10sq,dirNo, dx, dy, xmin, xmax, y, samplewd)
+                sortSum2D(dirAOD,dirAODsq,dirw10,dirw10sq,dirNo, dx, dy, xmin, xmax, y, samplewd,minsample)
             siteAOD=siteAOD+isiteAOD
             siteAODsq = siteAODsq + isiteAODsq
             sitew10 = sitew10 + isitew10
