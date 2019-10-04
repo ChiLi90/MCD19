@@ -153,7 +153,7 @@ def EMGFit(x,data,samplewd,minx0,nSample,**kwargs):
                     bounds.lb[2] = fixxsc
                     bounds.ub[2] = fixxsc
 
-                lconstr = LinearConstraint([[0, 1, 1, 1, 0],[0,1,0,-1,0]], [-np.inf,0.], [x[-1],np.inf])
+                lconstr = LinearConstraint([[0, 2, 1, 2, 0],[0,1,0,-1,0]], [-np.inf,0.], [x[-1],np.inf])
                 nlconstr = NonlinearConstraint(EMGNLConstr1, -np.inf, 20.)
                 # args = {'x0': x[0], 'xca': fixxca, 'xcc': fixxcc}
                 # nlconstr = NonlinearConstraint(EMANLConstr2, -np.inf, 0.)

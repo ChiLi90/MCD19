@@ -22,7 +22,7 @@ args = parser.parse_args()
 # vs = args.v
 chunckx=args.chunckx   #0 1
 chuncky=args.chuncky   #0 1 2 3 4
-chunckInterval=120
+chunckInterval=80
 strchk ='x'+ '{:10.0f}'.format(chunckx).strip()+'y'+ '{:10.0f}'.format(chuncky).strip()
 
 
@@ -35,7 +35,7 @@ a = args.a    #
 b = args.b
 
 indir='/global/scratch/chili/AvgMCD/SepWs/Sqr/Combined/'
-outdir='/global/scratch/chili/AvgMCD/SepWs/Plumes/a'+'{:10.0f}'.format(a).strip()+'b'+'{:10.0f}'.format(b).strip()+'/'
+outdir='/global/scratch/chili/AvgMCD/SepWs/Plumes/2011-2015/a'+'{:10.0f}'.format(a).strip()+'b'+'{:10.0f}'.format(b).strip()+'/'
 
 if not os.path.exists(outdir):
     os.makedirs(outdir)
@@ -51,7 +51,7 @@ wsinds = [1]
 # to be modified and tested
 
 b1 = a
-b2 = b+b1
+b2 = b+a
 complete = 0.667  # at least 2/3 of grids with available data for SNR calculation
 
 Rearth = 6373.0
@@ -161,8 +161,8 @@ for season in seasons:
                     continue
 
                 # upwind
-                uwind = ((np.abs(dy) <= a) & (dx >= -1 * b2) & (dx <= -1 * b1)).nonzero()
-                dwind = ((np.abs(dy) <= a) & (dx >= b1) & (dx <= b2)).nonzero()
+                uwind = ((np.abs(dy) <= 1.5*b/2.) & (dx >= -1 * b2) & (dx <= -1 * b1)).nonzero()
+                dwind = ((np.abs(dy) <= 1.5*b/2.) & (dx >= b1) & (dx <= b2)).nonzero()
 
                 uwAOD = dirAOD[uwind]
                 uwAODsq = dirAODsq[uwind]

@@ -186,7 +186,7 @@ minsample=100
 
 Datadir='/global/scratch/chili/AvgMCD/SepWs/Sqr/Combined/'
 sfile='/global/scratch/chili/AvgMCD/SepWs/Plumes/a15b20/Sources.txt'
-outdir='/global/scratch/chili/AvgMCD/SepWs/Sqr/Records/'+args.incCalm+'_'+'{:10.0f}'.format(args.xmin).strip()+'/'
+outdir='/global/scratch/chili/AvgMCD/SepWs/Sqr/FitDiffWidth/Records/'+args.incCalm+'_'+'{:10.0f}'.format(args.xmin).strip()+'/'
 
 if not os.path.exists(outdir):
     os.makedirs(outdir)
