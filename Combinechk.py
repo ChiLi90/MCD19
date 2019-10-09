@@ -17,8 +17,8 @@ nchx=args.nx
 nchy=args.ny
 strab=args.strab
 
-strse='2010-2015'
-wdir='/global/scratch/chili/AvgMCD/SepWs/Plumes/'+strse+'/'+strab+'/'
+strse='2001-2005'
+wdir='/global/scratch/chili/AvgMCD/SepWs/Sqr/CN/Plumes/2001-2005/'+strab+'/'
 outfile=wdir+season+'.'+strse+'.SNR.nc'
 
 filecount=0

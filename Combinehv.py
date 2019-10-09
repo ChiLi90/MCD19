@@ -9,11 +9,11 @@ from netCDF4 import Dataset
 import MCD19
 import glob
 
-indir='/global/scratch/chili/AvgMCD/SepWs/Sqr/'
-outdir='/global/scratch/chili/AvgMCD/SepWs/Sqr/'
-#strhvs = ['h26v05','h26v06','h27v05','h27v06','h28v05','h28v06']
-hs=np.arange(5)+8
-vs=np.arange(2)+4
+indir='/global/scratch/chili/AvgMCD/SepWs/Sqr/CN/'
+outdir='/global/scratch/chili/AvgMCD/SepWs/Sqr/CN/Combined/'
+strhvs = ['h26v04','h26v05','h26v06','h27v04','h27v05','h27v06','h28v04','h28v05','h28v06']
+hs=np.arange(3)+26
+vs=np.arange(2)+5
 #strhvs=['h08v04','h09v04']   #,'h08v05','h09v04','h09v05','h10v04','h10v05','h11v04','h11v05','h12v04','h12v05'
 seasons = ['winter','spring','summer','fall']
 varnames=['AOD','AODsq','u10','v10','w10sq','tp','tcc']

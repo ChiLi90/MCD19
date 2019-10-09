@@ -172,8 +172,10 @@ xarray=np.arange(xno)-np.round(xmin/samplewd).astype(int)
 #whether combine the 8 directions together
 if args.Combine=='True':
     CombineDirs=True
+    outdir='/global/scratch/chili/AvgMCD/SepWs/Sqr/NewFit/Records/'
 else:
     CombineDirs=False
+    outdir='/global/scratch/chili/AvgMCD/SepWs/Sqr/NewFit/RecordsDir/'
 
 if args.incCalm=='True':
     wsinds=[0,1]
@@ -186,8 +188,10 @@ minsample=100
 
 Datadir='/global/scratch/chili/AvgMCD/SepWs/Sqr/Combined/'
 sfile='/global/scratch/chili/AvgMCD/SepWs/Plumes/a15b20/Sources.txt'
-outdir='/global/scratch/chili/AvgMCD/SepWs/Sqr/FitDiffWidth/Records/'+args.incCalm+'_'+'{:10.0f}'.format(args.xmin).strip()+'/'
-
+outdir=outdir+args.incCalm+'_'+'{:10.0f}'.format(args.xmin).strip()+'/'
+NO2file='/global/scratch/chili/AvgMCD/NO2-Lu-2015-extra.csv'
+SO2file='/global/scratch/chili/AvgMCD/SO2-2014-US.csv'
+CNfile='/global/scratch/chili/AvgMCD/NO2-China-2016.csv'
 if not os.path.exists(outdir):
     os.makedirs(outdir)
 
@@ -240,19 +244,36 @@ w10sq=np.sum(w10sq[:,:,wsinds,:],axis=2)
 sample=np.sum(sample[:,:,wsinds,:],axis=2)
 
 #read the source file
-csvdata = MCD19.CSVload(sfile)
-CityLats = csvdata[1:, 1].astype(float)
-CityLons = csvdata[1:, 0].astype(float)
+#csvdata = MCD19.CSVload(sfile)
+#CityLats = csvdata[1:, 1].astype(float)
+#CityLons = csvdata[1:, 0].astype(float)
+#Citys=np.arange(len(CityLons))
+#Cityfile = SO2file
+#csvdata = MCD19.CSVload(Cityfile)
+#CityLats = csvdata[1:, 1].astype(float)
+#CityLons = csvdata[1:, 2].astype(float)
+#Citys = csvdata[1:, 5]
+Cityfile = NO2file
+csvdata = MCD19.CSVload(Cityfile)
+CityLats = csvdata[1:, 2].astype(float)
+CityLons = csvdata[1:, 3].astype(float)
+Citys = csvdata[1:, 0]
+#Cityfile = CNfile
+#csvdata=MCD19.CSVload(Cityfile)
+#CityLats=csvdata[1:,1].astype(float)
+#CityLons=csvdata[1:,2].astype(float)
+#Citys=csvdata[1:,0]
+
 
 for iloc in np.arange(len(CityLats)):
 
     x0=CityLons[iloc]
     y0=CityLats[iloc]
-    strloc = '{:10.0f}'.format(iloc).strip()
+    #strloc = '{:10.0f}'.format(iloc).strip()
 
     #record the sum, sum-square, sample and w10 squre of the "rectangle"
     if CombineDirs==True:
-        outfile = outdir + strloc +'.' +season+'.txt'
+        outfile = outdir + Citys[iloc] +'.' +season+'.txt'
         if os.path.exists(outfile):
             continue
 
@@ -266,7 +287,7 @@ for iloc in np.arange(len(CityLats)):
 
         if CombineDirs==False:
 
-            outfile=outdir+strloc+'.'+Dirs[idir]+'.'+season+'.txt'
+            outfile=outdir+Citys[iloc]+'.'+Dirs[idir]+'.'+season+'.txt'
             if os.path.exists(outfile):
                 continue
 

@@ -22,7 +22,7 @@ args = parser.parse_args()
 # vs = args.v
 chunckx=args.chunckx   #0 1
 chuncky=args.chuncky   #0 1 2 3 4
-chunckInterval=80
+chunckInterval=90
 strchk ='x'+ '{:10.0f}'.format(chunckx).strip()+'y'+ '{:10.0f}'.format(chuncky).strip()
 
 
@@ -34,8 +34,8 @@ endyr = args.end
 a = args.a    #
 b = args.b
 
-indir='/global/scratch/chili/AvgMCD/SepWs/Sqr/Combined/'
-outdir='/global/scratch/chili/AvgMCD/SepWs/Plumes/2011-2015/a'+'{:10.0f}'.format(a).strip()+'b'+'{:10.0f}'.format(b).strip()+'/'
+indir='/global/scratch/chili/AvgMCD/SepWs/Sqr/CN/Combined/'
+outdir='/global/scratch/chili/AvgMCD/SepWs/Sqr/CN/Plumes/2001-2005/a'+'{:10.0f}'.format(a).strip()+'b'+'{:10.0f}'.format(b).strip()+'/'
 
 if not os.path.exists(outdir):
     os.makedirs(outdir)

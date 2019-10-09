@@ -18,9 +18,9 @@ vs=args.v
 start=args.start
 end=args.end
 
-Aerdir = '/global/scratch/chili/MCD19A2.006/'
+Aerdir = '/clusterfs/aiolos/qindan_zhu/MCD19A2.006/'
 
-outdir = '/global/scratch/chili/AvgMCD/SepWs/test/'
+outdir = '/global/scratch/chili/AvgMCD/SepWs/sqr/CN/'
 if not os.path.exists(outdir):
         os.makedirs(outdir)
 
@@ -44,7 +44,7 @@ for h in hs:
     for v in vs:
         strhv = 'h' + '{:10.0f}'.format(h + 100).strip()[1:3] + 'v' + '{:10.0f}'.format(v + 100).strip()[1:3]
 
-        for season in seasons:
+        for season in seasons[1:4]:
             accflag=False
             for year in np.arange(end - start +1) + start:   #
 
