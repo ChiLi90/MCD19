@@ -56,9 +56,16 @@ complete = 0.667  # at least 2/3 of grids with available data for SNR calculatio
 
 Rearth = 6373.0
 
+minsample=10*(endyr-startyr+1)
+
+
 for season in seasons:
 
-    files = glob.glob(indir + season + '.*.nc')
+    if season == 'annual':
+        files = glob.glob(indir + '.*.nc')
+    else:
+        files = glob.glob(indir + season + '.*.nc')
+
 
     starts = np.zeros(len(files), dtype=int)
     ends = np.zeros(len(files), dtype=int)
@@ -129,12 +136,9 @@ for season in seasons:
     dirAODs = np.sum(accumAOD[:,:,wsinds,:],axis=2)*0.001
     dirAODsqs = np.sum(accumAODsq[:,:,wsinds,:],axis=2)*0.0001
     dirNos = np.sum(accumNo[:,:,wsinds,:],axis=2)
-
-    outAOD=np.sum(dirAODs,axis=2)
-    outNo=np.sum(dirNos,axis=2)
-
-
-
+    #AOD in calm conditions
+    outAOD=np.sum(accumAOD[:, :, 0, :],axis=2)*0.001
+    outNo=np.sum(accumNo[:, :, 0, :],axis=2)
 
     for ix in np.arange(chunckInterval)+chunckInterval*chunckx:     #
         for iy in np.arange(chunckInterval)+chunckInterval*chuncky:   #
@@ -142,6 +146,8 @@ for season in seasons:
             RtCenter = [Lon[ix, iy], Lat[ix, iy]]
 
             diraccum = False
+
+            useddirs=[]
 
             for idir in np.arange(ndirs):
                 dirAOD=dirAODs[:,:,idir]
@@ -172,38 +178,50 @@ for season in seasons:
                 dwAODsq = dirAODsq[dwind]
                 dwNo = dirNo[dwind]
 
-                # completeness check
-                if (np.array((dwNo > 0).nonzero()).flatten().size * 1. < complete * len(dwNo)) | (
-                        np.array((uwNo > 0).nonzero()).flatten().size * 1. < complete * len(uwNo)):
-                    continue
-
                 # the upwind and downwind sampling pixels should be close (<33% diff)
                 if (len(uwNo) <= 0) | (len(dwNo) <= 0) | \
                         (np.absolute(len(dwNo) - len(uwNo)) > (1. - complete) * np.max([len(dwNo), len(uwNo)])):
                     continue
 
+                # completeness check
+                if (np.array((dwNo > minsample).nonzero()).flatten().size * 1. < complete * len(dwNo)) | (
+                        np.array((uwNo > minsample).nonzero()).flatten().size * 1. < complete * len(uwNo)):
+                    continue
+
                 if diraccum == False:
-                    sampleuw = np.sum(uwNo[uwNo > 0])
-                    sampledw = np.sum(dwNo[dwNo > 0])
+                    sampleuw = np.sum(uwNo[uwNo > minsample])
+                    sampledw = np.sum(dwNo[dwNo > minsample])
 
-                    omegauw = np.sum(uwAOD[uwNo > 0])
-                    omegadw = np.sum(dwAOD[dwNo > 0])
+                    omegauw = np.sum(uwAOD[uwNo > minsample])
+                    omegadw = np.sum(dwAOD[dwNo > minsample])
 
-                    sigmauw = np.sum(uwAODsq[uwNo > 0])
-                    sigmadw = np.sum(dwAODsq[dwNo > 0])
+                    sigmauw = np.sum(uwAODsq[uwNo > minsample])
+                    sigmadw = np.sum(dwAODsq[dwNo > minsample])
                     diraccum = True
                 else:
 
-                    sampleuw = sampleuw + np.sum(uwNo[uwNo > 0])
-                    sampledw = sampledw + np.sum(dwNo[dwNo > 0])
+                    sampleuw = sampleuw + np.sum(uwNo[uwNo > minsample])
+                    sampledw = sampledw + np.sum(dwNo[dwNo > minsample])
 
-                    omegauw = omegauw + np.sum(uwAOD[uwNo > 0])
-                    omegadw = omegadw + np.sum(dwAOD[dwNo > 0])
+                    omegauw = omegauw + np.sum(uwAOD[uwNo > minsample])
+                    omegadw = omegadw + np.sum(dwAOD[dwNo > minsample])
 
-                    sigmauw = sigmauw + np.sum(uwAODsq[uwNo > 0])
-                    sigmadw = sigmadw + np.sum(dwAODsq[dwNo > 0])
+                    sigmauw = sigmauw + np.sum(uwAODsq[uwNo > minsample])
+                    sigmadw = sigmadw + np.sum(dwAODsq[dwNo > minsample])
+
+                useddirs=np.append([useddirs,idir])
 
             if diraccum == False:
+                continue
+
+            oppoflag=False
+            #test if at least a pair of opposite direction is included
+            for idir in useddirs:
+                if (np.argwhere(np.absolute(useddirs-idir)==4)).flatten().size>0:
+                    oppoflag=True
+                    break
+
+            if oppoflag==False:
                 continue
 
             omegauw = omegauw / sampleuw

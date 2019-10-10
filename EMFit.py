@@ -144,8 +144,10 @@ def EMGFit(x,data,samplewd,minx0,nSample,**kwargs):
                 x0[2] = maxxW  # , min = x[0], max = x[-1])
                 x0[4] = np.min(data)
 
-                bounds = Bounds([0., 1. / 3, x[0], 0.5, 0.], \
-                                [np.inf, np.inf, x[-1], np.max([maxxW - x[0], x[-1] - maxxW]), np.max(data)])
+
+                #we now limit the source location to be at most 50 km (rotation will make sense when you are close).
+                bounds = Bounds([0., 1. / 3, -50./samplewd, 0.5, 0.], \
+                                [np.inf, np.inf, 50./samplewd, np.max([maxxW - x[0], x[-1] - maxxW]), np.max(data)])
 
                 # test if solutions are similar for different "fixsource" handling
 
@@ -318,8 +320,9 @@ def EMAFit(x,data,samplewd,minx0,nSample,**kwargs):
                 x0[4] = maxxW  # , min = x[0], max = x[-1])
                 x0[5] = maxxW  # , min = x[0], max = x[-1])
 
-                bounds = Bounds([0., 0., 1. / 3, 1. / 3, x[0], x[0], 0.5, 0.5, 0.], \
-                                [np.inf, np.inf, np.inf, np.inf, x[-1], x[-1], \
+                #Now limit the source location to be within 50 km (so that rotation makes sense)
+                bounds = Bounds([0., 0., 1. / 3, 1. / 3, -50./samplewd, -50./samplewd, 0.5, 0.5, 0.], \
+                                [np.inf, np.inf, np.inf, np.inf, 50./samplewd, 50./samplewd, \
                                  np.max([maxxW - x[0], x[-1] - maxxW]), \
                                  np.max([maxxW - x[0], x[-1] - maxxW]), np.max(data)])
 
@@ -339,16 +342,10 @@ def EMAFit(x,data,samplewd,minx0,nSample,**kwargs):
                     bounds.lb[0]=0.
                     bounds.ub[0]=0.
 
-
-                #xsca+xa+sigmaa<x[-1]
-                #xscc+xc+sigmac<x[-1]
-                #xa>xc
-                #xa>sigmaa
-                #xc>sigmac
-                lconstmat=[[0, 0, 1, 0, 1, 0, 1, 0, 0], [0, 0, 0, 1, 0, 1, 0, 1, 0],[0,0,1,-1,0,0,0,0,0]\
-                           ,[0,0,1,0,0,0,-1,0,0],[0,0,0,1,0,0,0,-1,0]]
-                lconstmin=[-np.inf, -np.inf,0.,0.,0.]
-                lconstmax=[x[-1], x[-1],np.inf,np.inf,np.inf]
+                lconstmat=[[0, 0, 2, 0, 1, 0, 2, 0, 0], [0, 0, 0, 2, 0, 1, 0, 2, 0]\
+                           ,[0,0,1,0,0,0,-2,0,0],[0,0,0,1,0,0,0,-2,0]]
+                lconstmin=[-np.inf, -np.inf,0.,0.]
+                lconstmax=[x[-1], x[-1],np.inf,np.inf]
 
 
 

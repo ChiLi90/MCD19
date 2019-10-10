@@ -37,18 +37,18 @@ def sortSum2D(dirAOD,dirAODsq,dirw10,dirw10sq,dirNo,dx,dy,xmin,xmax,y,samplewd,m
     
     nvinds=(siteNo<minsample).nonzero()
     if np.array(nvinds).size>0:
-	    siteNo[nvinds]=0
-	    siteAOD[nvinds]=0.0
-	    siteAODsq[nvinds]=0.0
-	    sitew10[nvinds]=0.0
-	    sitew10sq[nvinds]=0.0
+        siteNo[nvinds] = 0
+        siteAOD[nvinds] = 0.0
+        siteAODsq[nvinds] = 0.0
+        sitew10[nvinds] = 0.0
+        sitew10sq[nvinds] = 0.0
+
 
 
     return [siteAOD, siteAODsq, sitew10, sitew10sq, siteNo]
 
-def FitOut(xarray,siteAOD, siteAODsq, sitew10, sitew10sq, siteNo, outfile,minsample,complete,x0,y0,samplewd):
+def FitOut(xarray,siteAOD, siteAODsq, sitew10, sitew10sq, siteNo, outfile,minsample,complete,x0,y0,samplewd,FitType):
 
-    pars=['a', 'x0', 'xsc', 'sigma', 'b','w10','r']
 
     nx,ny=siteNo.shape
 
@@ -75,71 +75,146 @@ def FitOut(xarray,siteAOD, siteAODsq, sitew10, sitew10sq, siteNo, outfile,minsam
     vinds=(acrossNo>0).nonzero()
     minx0=avgw10 * 3.6 / samplewd
 
-    [outEMG, successG] = EMFit.EMGFit(xarray[vinds], acrossAOD[vinds], samplewd, minx0, 20,
-                                      solver='trust-constr')
+    if FitType=='EMG':
+        pars = ['a', 'x0', 'xsc', 'sigma', 'b', 'w10', 'r']
 
-    if successG == False:
-        DoEMGFit = False
+        [outEMG, successG] = EMFit.EMGFit(xarray[vinds], acrossAOD[vinds], samplewd, minx0, 20,
+                                          solver='trust-constr')
 
-    else:
-        DoEMGFit = True
-        yEMG = EMFit.EMG(xarray[vinds], outEMG['a'], outEMG['x0'], \
-                         outEMG['xsc'], outEMG['sigma'], outEMG['b'])
-        corvalueEMG = pearsonr(acrossAOD[vinds], yEMG)
+        if successG == False:
+            DoEMGFit = False
 
-        outdata=np.zeros([2,len(pars)])
-        for ipar in np.arange(len(pars)-2):
-            outdata[0,ipar]=outEMG[pars[ipar]].value
-            outdata[1,ipar]=outEMG[pars[ipar]].brute_step
+        else:
+            DoEMGFit = True
+            yEMG = EMFit.EMG(xarray[vinds], outEMG['a'], outEMG['x0'], \
+                             outEMG['xsc'], outEMG['sigma'], outEMG['b'])
+            corvalueEMG = pearsonr(acrossAOD[vinds], yEMG)
 
-        outdata[0,len(pars)-2]=avgw10*3.6
-        outdata[1,len(pars)-2]=stdw10*3.6
-        outdata[:, len(pars) - 1] = corvalueEMG
-        #write outfile
+            outdata = np.zeros([2, len(pars)])
+            for ipar in np.arange(len(pars) - 2):
+                outdata[0, ipar] = outEMG[pars[ipar]].value
+                outdata[1, ipar] = outEMG[pars[ipar]].brute_step
 
-        outF = open(outfile, "w")
+            outdata[0, len(pars) - 2] = avgw10 * 3.6
+            outdata[1, len(pars) - 2] = stdw10 * 3.6
+            outdata[:, len(pars) - 1] = corvalueEMG
+            # write outfile
 
-        header = 'Lat=' + '{:10.2f}'.format(y0).strip() + ', Lon=' + '{:10.2f}'.format(x0).strip()+ \
-			', Sample=' + '{:10.2f}'.format(samplewd).strip()
-        outF.write(header)
-        outF.write('\n')
-        outF.write('{:>11}'.format('x/y,'))
-        outF.write(','.join(list(map('{:10.0f}'.format, xarray))))
-        outF.write('\n')
-        #x,y 2-D data
-        for iline in np.arange(ny):
-            outF.write('{:10.0f}'.format(-1*ny/2+iline)+',')
-            outF.write(','.join(list(map('{:10.3f}'.format, siteAOD[:,iline]/siteNo[:,iline]))))
+            outF = open(outfile, "w")
+
+            header = 'Lat=' + '{:10.2f}'.format(y0).strip() + ', Lon=' + '{:10.2f}'.format(x0).strip() + \
+                     ', Sample=' + '{:10.2f}'.format(samplewd).strip()
+            outF.write(header)
+            outF.write('\n')
+            outF.write('{:>11}'.format('x/y,'))
+            outF.write(','.join(list(map('{:10.0f}'.format, xarray))))
+            outF.write('\n')
+            # x,y 2-D data
+            for iline in np.arange(ny):
+                outF.write('{:10.0f}'.format(-1 * ny / 2 + iline) + ',')
+                outF.write(','.join(list(map('{:10.3f}'.format, siteAOD[:, iline] / siteNo[:, iline]))))
+                outF.write('\n')
+
+            # x, 1-D data
+            outF.write('{:>11}'.format('avgAOD,'))
+            outF.write(','.join(list(map('{:10.3f}'.format, acrossAOD))))
             outF.write('\n')
 
-        #x, 1-D data
-        outF.write('{:>11}'.format('avgAOD,'))
-        outF.write(','.join(list(map('{:10.3f}'.format, acrossAOD))))
-        outF.write('\n')
+            outF.write('{:>11}'.format('Sample,'))
+            outF.write(','.join(list(map('{:10.0f}'.format, acrossNo))))
+            outF.write('\n')
 
-        outF.write('{:>11}'.format('Sample,'))
-        outF.write(','.join(list(map('{:10.0f}'.format, acrossNo))))
-        outF.write('\n')
+            outF.write('{:>11}'.format('std,'))
+            outF.write(','.join(list(map('{:10.3f}'.format, acrossAODstd))))
+            outF.write('\n')
 
-        outF.write('{:>11}'.format('std,'))
-        outF.write(','.join(list(map('{:10.3f}'.format, acrossAODstd))))
-        outF.write('\n')
+            outF.write('{:>11}'.format('Pars,'))
+            outF.write(','.join(list(map('{:>10}'.format, pars))))
+            outF.write('\n')
 
-        outF.write('{:>11}'.format('Pars,'))
-        outF.write(','.join(list(map('{:>10}'.format, pars))))
-        outF.write('\n')
+            outF.write('{:>11}'.format('avg,'))
+            outF.write(','.join(list(map('{:10.3e}'.format, outdata[0, :]))))
+            outF.write('\n')
 
-        outF.write('{:>11}'.format('avg,'))
-        outF.write(','.join(list(map('{:10.3e}'.format, outdata[0,:]))))
-        outF.write('\n')
+            outF.write('{:>11}'.format('std,'))
+            outF.write(','.join(list(map('{:10.3e}'.format, outdata[1, :]))))
+            outF.write('\n')
 
-        outF.write('{:>11}'.format('std,'))
-        outF.write(','.join(list(map('{:10.3e}'.format, outdata[1, :]))))
-        outF.write('\n')
+        return DoEMGFit
+
+    if FitType=='EMA':
+        pars = ['a', 'c', 'xa', 'xc', 'xsca', 'xscc', 'sigmaa', 'sigmac', 'b', 'w10', 'r']
+
+        [outEMA, successA] = EMFit.EMAFit(xarray[vinds], acrossAOD[vinds], samplewd, minx0, 50, \
+                                          sameSource=True, sDom=True,solver='trust-constr')
+
+        if successA == False:
+            DoEMAFit = False
+
+        else:
+            DoEMAFit = True
+            yEMA = EMFit.EMA(xarray[vinds], outEMA['a'], outEMA['c'], \
+                             outEMA['xa'], outEMA['xc'], \
+                             outEMA['xsca'], outEMA['xscc'], \
+                             outEMA['sigmaa'], outEMA['sigmac'], \
+                             outEMA['b'])
+            corvalueEMA = pearsonr(acrossAOD[vinds], yEMA)
+
+
+            outdata = np.zeros([2, len(pars)])
+            for ipar in np.arange(len(pars) - 2):
+                outdata[0, ipar] = outEMA[pars[ipar]].value
+                outdata[1, ipar] = outEMA[pars[ipar]].brute_step
+
+            outdata[0, len(pars) - 2] = avgw10 * 3.6
+            outdata[1, len(pars) - 2] = stdw10 * 3.6
+            outdata[:, len(pars) - 1] = corvalueEMA
+            # write outfile
+
+            outF = open(outfile, "w")
+
+            header = 'Lat=' + '{:10.2f}'.format(y0).strip() + ', Lon=' + '{:10.2f}'.format(x0).strip() + \
+                     ', Sample=' + '{:10.2f}'.format(samplewd).strip()
+            outF.write(header)
+            outF.write('\n')
+            outF.write('{:>11}'.format('x/y,'))
+            outF.write(','.join(list(map('{:10.0f}'.format, xarray))))
+            outF.write('\n')
+            # x,y 2-D data
+            for iline in np.arange(ny):
+                outF.write('{:10.0f}'.format(-1 * ny / 2 + iline) + ',')
+                outF.write(','.join(list(map('{:10.3f}'.format, siteAOD[:, iline] / siteNo[:, iline]))))
+                outF.write('\n')
+
+            # x, 1-D data
+            outF.write('{:>11}'.format('avgAOD,'))
+            outF.write(','.join(list(map('{:10.3f}'.format, acrossAOD))))
+            outF.write('\n')
+
+            outF.write('{:>11}'.format('Sample,'))
+            outF.write(','.join(list(map('{:10.0f}'.format, acrossNo))))
+            outF.write('\n')
+
+            outF.write('{:>11}'.format('std,'))
+            outF.write(','.join(list(map('{:10.3f}'.format, acrossAODstd))))
+            outF.write('\n')
+
+            outF.write('{:>11}'.format('Pars,'))
+            outF.write(','.join(list(map('{:>10}'.format, pars))))
+            outF.write('\n')
+
+            outF.write('{:>11}'.format('avg,'))
+            outF.write(','.join(list(map('{:10.3e}'.format, outdata[0, :]))))
+            outF.write('\n')
+
+            outF.write('{:>11}'.format('std,'))
+            outF.write(','.join(list(map('{:10.3e}'.format, outdata[1, :]))))
+            outF.write('\n')
+
+        return DoEMAFit
 
 
 
-    return DoEMGFit
 
 
 
@@ -153,6 +228,7 @@ parser.add_argument("--xmin",type=float)
 parser.add_argument("--xmax",type=float)
 parser.add_argument("--start",type=int)
 parser.add_argument("--end",type=int)
+parser.add_argument("--FitType")
 
 args = parser.parse_args()
 season=args.season
@@ -161,6 +237,7 @@ xmin=np.absolute(args.xmin)
 xmax=np.absolute(args.xmax)
 startyr=args.start
 endyr=args.end
+FitType=args.FitType
 
 samplewd=5. #native resolution, 5km
 xno=np.round(xmax/samplewd).astype(int)+np.round(xmin/samplewd).astype(int)+1
@@ -184,7 +261,9 @@ else:
 
 Rearth = 6373.0
 complete=0.667
-minsample=100
+
+#every pixle contain at least 10 observations each year for this season (180 days)
+minsample=10*(endyr-startyr+1)
 
 Datadir='/global/scratch/chili/AvgMCD/SepWs/Sqr/Combined/'
 sfile='/global/scratch/chili/AvgMCD/SepWs/Plumes/a15b20/Sources.txt'
@@ -244,10 +323,10 @@ w10sq=np.sum(w10sq[:,:,wsinds,:],axis=2)
 sample=np.sum(sample[:,:,wsinds,:],axis=2)
 
 #read the source file
-#csvdata = MCD19.CSVload(sfile)
-#CityLats = csvdata[1:, 1].astype(float)
-#CityLons = csvdata[1:, 0].astype(float)
-#Citys=np.arange(len(CityLons))
+# csvdata = MCD19.CSVload(sfile)
+# CityLats = csvdata[1:, 1].astype(float)
+# CityLons = csvdata[1:, 0].astype(float)
+# Citys=list(map('{:10.0f}'.format,np.arange(len(CityLons))))
 #Cityfile = SO2file
 #csvdata = MCD19.CSVload(Cityfile)
 #CityLats = csvdata[1:, 1].astype(float)
@@ -273,7 +352,7 @@ for iloc in np.arange(len(CityLats)):
 
     #record the sum, sum-square, sample and w10 squre of the "rectangle"
     if CombineDirs==True:
-        outfile = outdir + Citys[iloc] +'.' +season+'.txt'
+        outfile = outdir + Citys[iloc].strip() +'.' +season+'.txt'
         if os.path.exists(outfile):
             continue
 
@@ -311,7 +390,7 @@ for iloc in np.arange(len(CityLats)):
             [siteAOD,siteAODsq,sitew10,sitew10sq,siteNo] = \
                 sortSum2D(dirAOD,dirAODsq,dirw10,dirw10sq,dirNo, dx, dy, xmin, xmax, y, samplewd,minsample)
             success = FitOut(xarray,siteAOD, siteAODsq, sitew10, sitew10sq, siteNo, outfile,minsample,complete,x0,y0,\
-                             samplewd)
+                             samplewd,FitType)
             if success == False:
                 print('unsuccessful fitting for file: ' + outfile)
         else:
@@ -326,7 +405,7 @@ for iloc in np.arange(len(CityLats)):
 
     if CombineDirs==True:
         success = FitOut(xarray,siteAOD, siteAODsq, sitew10, sitew10sq, siteNo, outfile,minsample,complete,x0,y0,\
-                         samplewd)
+                         samplewd,FitType)
 
         if success==False:
             print('unsuccessful fitting for file: '+outfile)
