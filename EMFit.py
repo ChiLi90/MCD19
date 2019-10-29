@@ -154,13 +154,15 @@ def EMGFit(x,data,samplewd,minx0,nSample,**kwargs):
                 if DoFixSource:
                     bounds.lb[2] = fixxsc
                     bounds.ub[2] = fixxsc
-
-                lconstr = LinearConstraint([[0, 2, 1, 2, 0],[0,1,0,-2,0]], [-np.inf,0.], [x[-1],np.inf])
+		
+		#we set x0>=sigma in the fitting, and reject results when x0==sigma
+                #lconstr = LinearConstraint([[0, 2, 1, 2, 0],[0,1,0,-2,0]], [-np.inf,0.], [x[-1],np.inf])
+                lconstr = LinearConstraint([[0,1,1,1,0],[0,1,0,-1,0]],[-np.inf,0.],[x[-1],np.inf])
                 nlconstr = NonlinearConstraint(EMGNLConstr1, -np.inf, 20.)
                 # args = {'x0': x[0], 'xca': fixxca, 'xcc': fixxcc}
                 # nlconstr = NonlinearConstraint(EMANLConstr2, -np.inf, 0.)
                 res = scipyminimize(EMGchisqr1, x0, args=(x, data), method='trust-constr', \
-                                    constraints=[lconstr, nlconstr], options={'verbose': 0},
+                                    constraints=[lconstr,nlconstr], options={'verbose': 0},
                                     bounds=bounds)  # constraints=[lconstr, nlconstr],
                 Hess = nd.Hessian(EMGchisqr1)(res.x, x, data)
 
@@ -342,8 +344,7 @@ def EMAFit(x,data,samplewd,minx0,nSample,**kwargs):
                     bounds.lb[0]=0.
                     bounds.ub[0]=0.
 
-                lconstmat=[[0, 0, 2, 0, 1, 0, 2, 0, 0], [0, 0, 0, 2, 0, 1, 0, 2, 0]\
-                           ,[0,0,1,0,0,0,-2,0,0],[0,0,0,1,0,0,0,-2,0]]
+                lconstmat=[[0, 0, 1, 0, 1, 0, 1, 0, 0], [0, 0, 0, 1, 0, 1, 0, 1, 0],[0,0,1,0,0,0,-1,0,0],[0,0,0,1,0,0,0,-1,0]]
                 lconstmin=[-np.inf, -np.inf,0.,0.]
                 lconstmax=[x[-1], x[-1],np.inf,np.inf]
 
@@ -365,7 +366,7 @@ def EMAFit(x,data,samplewd,minx0,nSample,**kwargs):
 
                 nlconstr = NonlinearConstraint(EMANLConstr1, -np.inf, 20.)
                 res = scipyminimize(EMAchisqr1, x0, args=(x, data), method='trust-constr', \
-                                    constraints=[lconstr, nlconstr], options={'verbose': 0},
+                                    constraints=[lconstr,nlconstr], options={'verbose': 0},
                                     bounds=bounds)  # constraints=[lconstr, nlconstr],
                 Hess = nd.Hessian(EMAchisqr1)(res.x, x, data)
                     # args = {'x0': x[0]}
@@ -452,14 +453,11 @@ def EMANLConstr1(x):
 
     return [np.exp(x[4]/x[2]+x[6] ** 2 / (2. * (x[2] ** 2))),     #(x[4] - args['x0']) / x[2] +
             np.exp(x[5]/x[3]+x[7] ** 2 / (2. * (x[3] ** 2))),     #(x[5] - args['x0']) / x[3] +
-            np.exp(x[5]/x[2]+x[7] ** 2 / (2. * (x[2] ** 2))),
-            x[7]-x[3]+20.,
-            x[6]-x[2]+20.]       #(x[5] - args['x0']) / x[2] +
+            np.exp(x[5]/x[2]+x[7] ** 2 / (2. * (x[2] ** 2)))]       #(x[5] - args['x0']) / x[2] +
 
 def EMGNLConstr1(x):
 
-    return [np.exp(x[2]/x[1]+x[3] ** 2 / (2. * (x[1] ** 2))),
-            x[3]-x[1]+20.]
+    return np.exp(x[2]/x[1]+x[3] ** 2 / (2. * (x[1] ** 2)))
 
 
 #Exponentially modified aerosol function.

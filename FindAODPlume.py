@@ -22,7 +22,7 @@ args = parser.parse_args()
 # vs = args.v
 chunckx=args.chunckx   #0 1
 chuncky=args.chuncky   #0 1 2 3 4
-chunckInterval=90
+chunckInterval=60
 strchk ='x'+ '{:10.0f}'.format(chunckx).strip()+'y'+ '{:10.0f}'.format(chuncky).strip()
 
 
@@ -35,7 +35,7 @@ a = args.a    #
 b = args.b
 
 indir='/global/scratch/chili/AvgMCD/SepWs/Sqr/CN/Combined/'
-outdir='/global/scratch/chili/AvgMCD/SepWs/Sqr/CN/Plumes/2001-2005/a'+'{:10.0f}'.format(a).strip()+'b'+'{:10.0f}'.format(b).strip()+'/'
+outdir='/global/scratch/chili/AvgMCD/SepWs/Sqr/CN/Plumes/a'+'{:10.0f}'.format(a).strip()+'b'+'{:10.0f}'.format(b).strip()+'/'
 
 if not os.path.exists(outdir):
     os.makedirs(outdir)
@@ -209,15 +209,18 @@ for season in seasons:
                     sigmauw = sigmauw + np.sum(uwAODsq[uwNo > minsample])
                     sigmadw = sigmadw + np.sum(dwAODsq[dwNo > minsample])
 
-                useddirs=np.append([useddirs,idir])
+                useddirs=np.append(useddirs,idir)
 
             if diraccum == False:
                 continue
-
+	    #at leat 4 directions are available for calculation
+            if len(useddirs)<4:
+                continue
             oppoflag=False
-            #test if at least a pair of opposite direction is included
+            #test if at least a pair of perpendicular direction is included
+
             for idir in useddirs:
-                if (np.argwhere(np.absolute(useddirs-idir)==4)).flatten().size>0:
+                if (np.argwhere(np.absolute(useddirs-idir)==2)).flatten().size>0:
                     oppoflag=True
                     break
 

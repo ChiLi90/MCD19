@@ -462,12 +462,7 @@ def AccumAOD(Aerdir, strhv, start, end,**kwargs):
 def GetWindSpeed(Lons,Lats,obtime):
 
 
-    nx,ny=Lons.shape
 
-
-
-    rLons=rebin(Lons,[nx/10,ny/10])
-    rLats=rebin(Lats,[nx/10,ny/10])
 
     ECdir = '/global/scratch/chili/ERA5UV/'
     # extract year month day UTC from obtime
@@ -491,38 +486,47 @@ def GetWindSpeed(Lons,Lats,obtime):
         lontemp[lon > 180] = lontemp[lon > 180] - 360.
         lon = lontemp
 
-    #parallizible?
-    xind = np.array(list(map(lambda x0: np.argmin(np.absolute(lon - x0)), rLons.flatten())))
-    yind = np.array(list(map(lambda y0: np.argmin(np.absolute(lat - y0)), rLats.flatten())))
-
-    #xind = np.array(jit_findnearest(rLons.flatten(), lon))
-    #yind = np.array(jit_findnearest(rLats.flatten(), lat))
-
-    # xind=np.array(rLons.size,dtype=int)
-    # cuda_findnearest(rLons.flatten(), lon, xind)
-    # yind = np.array(rLats.size,dtype=int)
-    # cuda_findnearest(rLats.flatten(), lat, yind)
-
     noday = (len(dsu["time"][:]) - 1) / 8
     thour = (refday.day - 1) * 24. + hour
     thours = np.arange(noday * 24)
 
     tind = np.argmin(np.absolute(thours - thour))
-
     usf = dsu["u"]
     vsf = dsv["v"]
 
     usft = usf[tind, :, :, :]
     vsft = vsf[tind, :, :, :]
 
-    udata = np.mean(usft[:,yind, xind],axis=0)
-    vdata = np.mean(vsft[:,yind, xind],axis=0)
-    dsu.close()
-    dsv.close()
+    if Lons.size==1:
 
-    #rwsdata=np.sqrt(udata**2+vdata**2).reshape([nx/10,ny/10])
-    return [rebin(udata.reshape(np.array([nx/10,ny/10]).astype(int)),[nx,ny]),\
-            rebin(vdata.reshape(np.array([nx/10,ny/10]).astype(int)),[nx,ny])]
+        xind = np.argmin(np.absolute(lon - Lons[0]))
+        yind = np.argmin(np.absolute(lat - Lats[0]))
+
+        udata = np.mean(usft[:, yind, xind], axis=0)
+        vdata = np.mean(vsft[:, yind, xind], axis=0)
+        dsu.close()
+        dsv.close()
+
+        return[udata,vdata]
+
+    else:
+        nx, ny = Lons.shape
+
+        rLons = rebin(Lons, [nx / 10, ny / 10])
+        rLats = rebin(Lats, [nx / 10, ny / 10])
+        # parallizible?
+        xind = np.array(list(map(lambda x0: np.argmin(np.absolute(lon - x0)), rLons.flatten())))
+        yind = np.array(list(map(lambda y0: np.argmin(np.absolute(lat - y0)), rLats.flatten())))
+
+        udata = np.mean(usft[:, yind, xind], axis=0)
+        vdata = np.mean(vsft[:, yind, xind], axis=0)
+        dsu.close()
+        dsv.close()
+
+        # rwsdata=np.sqrt(udata**2+vdata**2).reshape([nx/10,ny/10])
+        return [rebin(udata.reshape(np.array([nx / 10, ny / 10]).astype(int)), [nx, ny]), \
+                rebin(vdata.reshape(np.array([nx / 10, ny / 10]).astype(int)), [nx, ny])]
+
 
 def GetERA(Lons,Lats,obtime,parameter):
 
@@ -588,51 +592,18 @@ def RotateAOD(AOD,xlocs,ylocs,x0,y0,**kwargs):
         udata=[kwargs['uv'][0]]
         vdata=[kwargs['uv'][1]]
     else:
-        ECdir = '/Volumes/homes/chili/ERA5/'
-        # extract year month day UTC from obtime
-        obtime=kwargs['obtime']
-        year = np.int(obtime[0:4])
-        dayno = np.int(obtime[4:7])
-        hour = np.int(obtime[7:9]) + np.float(obtime[9:11]) / 60.
-
-        refday = datetime(year, 1, 1) + timedelta(days=(dayno - 1))
-
-        stryymm = '{:10.0f}'.format(year).strip() + '{:10.0f}'.format(refday.month + 100).strip()[1:3]
-
-        ECfile = ECdir + stryymm + '.nc'
-        ds = Nio.open_file(ECfile, 'r')
-
-        lat = ds.variables["latitude"][:].flatten()
-        lon = ds.variables["longitude"][:].flatten()
-        if (np.max(lon) > 180.):
-            lontemp = lon
-            lontemp[lon > 180] = lontemp[lon > 180] - 360.
-            lon = lontemp
-
-        xind = np.argmin(np.absolute(lon - x0))
-        yind = np.argmin(np.absolute(lat - y0))
-        noday = (len(ds.variables["time"][:]) - 1) / 8
-        thour = (refday.day - 1) * 24. + hour
-        thours = np.arange(noday * 24)
-
-        tind = np.argmin(np.absolute(thours - thour))
-
-        usf = ds.variables["u10"]
-        vsf = ds.variables["v10"]
-        udata = usf[tind, yind, xind] * usf.attributes['scale_factor'] + usf.attributes['add_offset']
-        vdata = vsf[tind, yind, xind] * vsf.attributes['scale_factor'] + vsf.attributes['add_offset']
-
-        ds.close()
+        print ("no wind information found!")
+        return [0,0]
 
 
     if 'Uthres' in kwargs:
         wddata=np.sqrt(udata[0]**2+vdata[0]**2)
         if wddata<kwargs['Uthres']:
-            return [None,None,None,None,None]
+            return [None,None,None]
 
-    locind = np.argmin(np.absolute((xlocs - x0)**2+(ylocs-y0)**2))
-    x0 = xlocs.flatten()[locind]
-    y0 = ylocs.flatten()[locind]
+    # locind = np.argmin(np.absolute((xlocs - x0)**2+(ylocs-y0)**2))
+    # x0 = xlocs.flatten()[locind]
+    # y0 = ylocs.flatten()[locind]
 
     [xr, yr] = Rotate2East(udata[0],vdata[0], xlocs-x0, ylocs-y0)
 
@@ -866,4 +837,153 @@ def CSVload(file):
         csv_reader = csv.reader(csv_file, delimiter=',')
         csvdata.append([[x.strip() for x in row] for row in csv_reader])
     return np.array(csvdata)[0,:,:]
+
+def gethv(Datadir,x0,y0,mindist):
+
+    files=glob.glob(Datadir+'2005.01.01/*.hdf')
+    strhv=[]
+    for Aerfile in files:
+        ds = SD(Aerfile, SDC.READ)
+        lookup1 = 'UpperLeftPointMtrs'
+        lookup2 = 'LowerRightMtrs'
+        StrMeta = ds.attributes()['StructMetadata.0']
+        for line in StrMeta.splitlines():
+            if lookup1 in line:
+                xy = (line.split('('))[1].split(',')
+                xul = np.float(xy[0])
+                yul = np.float((xy[1].split(')'))[0])
+            if lookup2 in line:
+                xy = (line.split('('))[1].split(',')
+                xlr = np.float(xy[0])
+                ylr = np.float((xy[1].split(')'))[0])
+                break
+
+        Aobj = ds.select('Optical_Depth_047')
+        AOD = Aobj.get()
+        [nx, ny] = AOD[0, :, :].shape
+        XDim = xul + (0.5 + np.arange(nx)) * (xlr - xul) / nx
+        YDim = yul + (0.5 + np.arange(ny)) * (ylr - yul) / ny
+        # YDim=np.flip(YDim)
+        xv, yv = np.meshgrid(XDim, YDim)
+        # In basemap, the sinusoidal projection is global, so we won't use it.
+        # Instead we'll convert the grid back to lat/lons.
+        sinu = pyproj.Proj("+proj=sinu +R=6371007.181 +nadgrids=@null +wktext")
+        wgs84 = pyproj.Proj("+proj=latlong +R=6371007.181")
+        lon, lat = pyproj.transform(sinu, wgs84, xv, yv)
+        ds.end()
+
+        distance = (lat - y0) ** 2 + (lon - x0) ** 2
+
+        if np.min(distance) < mindist:
+            strhv=np.append(strhv,((Aerfile.split('/'))[-1].split('.'))[-4])
+
+
+    return strhv
+
+
+def getAODwind(Datadir,x0,y0,date,**kwargs):
+
+    if 'mindist' in kwargs:
+        mindist=kwargs['mindist']
+    else:
+        mindist=100.    #1000km?
+
+    # "date" is in the format of YYYY.MM.DD
+    if 'strhv' in kwargs:
+        strhvs=kwargs['strhv']
+    else:
+        strhvs=gethv(Datadir,x0,y0,mindist)
+
+    obno = 0
+
+    Finduv=False
+    for strhv in strhvs:
+
+        files = glob.glob(Datadir + date + '/' + 'MCD19*.' + strhv + '.*hdf')
+
+        if (len(files) < 1) | (len(files) > 1):
+            print("wrong number of files for date " + date+' and '+strhv + ': ', len(files))
+            continue
+
+        [AOD, obtime, hvLat, hvLon] = ReadAOD(files[0], CalLatLon=True)
+
+        righthv=False
+        distance = (hvLat - y0) ** 2 + (hvLon - x0) ** 2
+        if np.min(distance)<0.0002:
+            righthv=True
+
+        [nx, ny] = hvLat.shape
+
+        #weighted average of AOD
+        AOD[(AOD <= 0) | np.isnan(AOD)] = 0.
+        AODno=np.zeros([len(obtime),nx,ny],dtype=int)
+        AODno[AOD>0]=1
+        AODsample = np.sum(AODno, axis=0)
+        AODob = np.sum(AOD, axis=0)
+        AODobsq = np.sum(AOD**2,axis=0)
+
+        if (np.all(AODob <= 0.)) | (np.all(np.isnan(AODob))):
+            print('Date ' + date + ' contains no meaningful AOD')
+
+            continue
+
+        if 'rebin' in kwargs:
+            sfactor = kwargs['rebin']  # rebin by a factor of 5/10/20...
+            newx = nx / sfactor
+            newy = ny / sfactor
+            hvLat = rebin(hvLat, [newx, newy])
+            hvLon = rebin(hvLon, [newx, newy])
+            AODob = rebin(AODob, [newx, newy],Add=True)
+            AODsample = rebin(AODsample, [newx, newy], Add=True)
+            AODobsq=rebin(AODobsq,[newx,newy],Add=True)
+
+        AODob[AODsample>0]=AODob[AODsample>0]/AODsample[AODsample>0]
+        AODobsq[AODsample > 0] = AODobsq[AODsample > 0] / AODsample[AODsample > 0]
+
+        if obno==0:
+
+            hvLats=hvLat
+            hvLons=hvLon
+            outAOD=AODob
+            outno=AODsample
+            outAODsq=AODobsq
+
+        else:
+
+            hvLats = np.append(hvLats,hvLat,axis=0)
+            hvLons = np.append(hvLons,hvLon,axis=0)
+            outAOD = np.append(outAOD,AODob,axis=0)
+            outAODsq = np.append(outAODsq,AODobsq,axis=0)
+            outno = np.append(outno,AODsample,axis=0)
+
+
+        if righthv==True:
+            # weighted average of u and v
+            uc = 0
+            vc = 0
+            obweight = 0
+            for iob in np.arange(len(obtime)):
+                # wind vector for each pixel
+                [u, v] = GetWindSpeed(np.array([[x0]]), np.array([[y0]]), obtime[iob])
+                obsum = np.sum(AODno[iob, :, :])
+                uc = uc + u * obsum
+                vc = vc + v * obsum
+                obweight = obweight + obsum
+
+            uc = uc / obweight
+            vc = vc / obweight
+            outuc=uc
+            outvc=vc
+
+            Finduv=True
+
+        obno=obno+1
+
+    if (obno<=0) | (Finduv==False):
+        return [strhvs, 0, 0, 0, 0, 0, 0, 0]
+
+    return [strhvs, hvLats, hvLons, outAOD,outAODsq, outno, outuc, outvc]
+
+
+
 

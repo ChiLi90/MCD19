@@ -54,7 +54,7 @@ def FitOut(xarray,siteAOD, siteAODsq, sitew10, sitew10sq, siteNo, outfile,minsam
 
     #check completeness
     nvinds=(siteNo<minsample).nonzero()
-    if np.array(nvinds).size>(1-complete)*siteNo.size:
+    if np.array(nvinds).size/2.>(1-complete)*siteNo.size:
         return False
 
     siteNo[nvinds]=0
@@ -146,7 +146,7 @@ def FitOut(xarray,siteAOD, siteAODsq, sitew10, sitew10sq, siteNo, outfile,minsam
         pars = ['a', 'c', 'xa', 'xc', 'xsca', 'xscc', 'sigmaa', 'sigmac', 'b', 'w10', 'r']
 
         [outEMA, successA] = EMFit.EMAFit(xarray[vinds], acrossAOD[vinds], samplewd, minx0, 50, \
-                                          sameSource=True, sDom=True,solver='trust-constr')
+                                          sameSource=True,solver='trust-constr')
 
         if successA == False:
             DoEMAFit = False
@@ -249,10 +249,10 @@ xarray=np.arange(xno)-np.round(xmin/samplewd).astype(int)
 #whether combine the 8 directions together
 if args.Combine=='True':
     CombineDirs=True
-    outdir='/global/scratch/chili/AvgMCD/SepWs/Sqr/NewFit/Records/'
+    outdir='/global/scratch/chili/AvgMCD/SepWs/Sqr/100Fit/CN/Records/'
 else:
     CombineDirs=False
-    outdir='/global/scratch/chili/AvgMCD/SepWs/Sqr/NewFit/RecordsDir/'
+    outdir='/global/scratch/chili/AvgMCD/SepWs/Sqr/100Fit/CN/RecordsDir/'
 
 if args.incCalm=='True':
     wsinds=[0,1]
@@ -262,13 +262,13 @@ else:
 Rearth = 6373.0
 complete=0.667
 
-#every pixle contain at least 10 observations each year for this season (180 days)
-minsample=10*(endyr-startyr+1)
+#every pixle contain at least 1 observations each year for this season (180 days)
+minsample=endyr-startyr+1
 
-Datadir='/global/scratch/chili/AvgMCD/SepWs/Sqr/Combined/'
+Datadir='/global/scratch/chili/AvgMCD/SepWs/Sqr/CN/Combined/'
 sfile='/global/scratch/chili/AvgMCD/SepWs/Plumes/a15b20/Sources.txt'
 outdir=outdir+args.incCalm+'_'+'{:10.0f}'.format(args.xmin).strip()+'/'
-NO2file='/global/scratch/chili/AvgMCD/NO2-Lu-2015-extra.csv'
+NO2file='/global/scratch/chili/AvgMCD/NO2-Lu-2015.csv'
 SO2file='/global/scratch/chili/AvgMCD/SO2-2014-US.csv'
 CNfile='/global/scratch/chili/AvgMCD/NO2-China-2016.csv'
 if not os.path.exists(outdir):
@@ -332,16 +332,16 @@ sample=np.sum(sample[:,:,wsinds,:],axis=2)
 #CityLats = csvdata[1:, 1].astype(float)
 #CityLons = csvdata[1:, 2].astype(float)
 #Citys = csvdata[1:, 5]
-Cityfile = NO2file
-csvdata = MCD19.CSVload(Cityfile)
-CityLats = csvdata[1:, 2].astype(float)
-CityLons = csvdata[1:, 3].astype(float)
-Citys = csvdata[1:, 0]
-#Cityfile = CNfile
-#csvdata=MCD19.CSVload(Cityfile)
-#CityLats=csvdata[1:,1].astype(float)
-#CityLons=csvdata[1:,2].astype(float)
-#Citys=csvdata[1:,0]
+#Cityfile = NO2file
+#csvdata = MCD19.CSVload(Cityfile)
+#CityLats = csvdata[1:, 2].astype(float)
+#CityLons = csvdata[1:, 3].astype(float)
+#Citys = csvdata[1:, 0]
+Cityfile = CNfile
+csvdata=MCD19.CSVload(Cityfile)
+CityLats=csvdata[1:,1].astype(float)
+CityLons=csvdata[1:,2].astype(float)
+Citys=csvdata[1:,0]
 
 
 for iloc in np.arange(len(CityLats)):
@@ -366,7 +366,7 @@ for iloc in np.arange(len(CityLats)):
 
         if CombineDirs==False:
 
-            outfile=outdir+Citys[iloc]+'.'+Dirs[idir]+'.'+season+'.txt'
+            outfile=outdir+Citys[iloc].strip()+'.'+Dirs[idir]+'.'+season+'.txt'
             if os.path.exists(outfile):
                 continue
 
