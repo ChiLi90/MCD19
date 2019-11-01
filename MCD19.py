@@ -840,7 +840,7 @@ def CSVload(file):
 
 def gethv(Datadir,x0,y0,mindist):
 
-    files=glob.glob(Datadir+'2005.01.01/*.hdf')
+    files=glob.glob(Datadir+'2002.02.23/*.hdf')
     strhv=[]
     for Aerfile in files:
         ds = SD(Aerfile, SDC.READ)
