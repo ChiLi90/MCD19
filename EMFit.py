@@ -144,10 +144,8 @@ def EMGFit(x,data,samplewd,minx0,nSample,**kwargs):
                 x0[2] = maxxW  # , min = x[0], max = x[-1])
                 x0[4] = np.min(data)
 
-
-                #we now limit the source location to be at most 50 km (rotation will make sense when you are close).
-                bounds = Bounds([0., 1. / 3, -50./samplewd, 0.5, 0.], \
-                                [np.inf, np.inf, 50./samplewd, np.max([maxxW - x[0], x[-1] - maxxW]), np.max(data)])
+                bounds = Bounds([0., 1. / 3, x[0], 0.5, 0.], \
+                                [np.inf, np.inf, x[-1], np.max([maxxW - x[0], x[-1] - maxxW]), np.max(data)])
 
                 # test if solutions are similar for different "fixsource" handling
 
@@ -155,7 +153,7 @@ def EMGFit(x,data,samplewd,minx0,nSample,**kwargs):
                     bounds.lb[2] = fixxsc
                     bounds.ub[2] = fixxsc
 		
-		#we set x0>=sigma in the fitting, and reject results when x0==sigma
+		        #we set x0>=sigma in the fitting, and reject results when x0==sigma
                 #lconstr = LinearConstraint([[0, 2, 1, 2, 0],[0,1,0,-2,0]], [-np.inf,0.], [x[-1],np.inf])
                 lconstr = LinearConstraint([[0,1,1,1,0],[0,1,0,-1,0]],[-np.inf,0.],[x[-1],np.inf])
                 nlconstr = NonlinearConstraint(EMGNLConstr1, -np.inf, 20.)

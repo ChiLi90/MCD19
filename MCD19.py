@@ -459,12 +459,9 @@ def AccumAOD(Aerdir, strhv, start, end,**kwargs):
 
     return [accumAOD,accumsqAOD, accumNo, Lat, Lon, totalNo]
 
-def GetWindSpeed(Lons,Lats,obtime):
+def GetWindSpeed(Lons,Lats,obtime,**kwargs):
 
-
-
-
-    ECdir = '/global/scratch/chili/ERA5UV/'
+    ECdir = '/Users/chili/Downloads/AvgMCD/'
     # extract year month day UTC from obtime
     year = np.int(obtime[0:4])
     dayno = np.int(obtime[4:7])
@@ -502,12 +499,32 @@ def GetWindSpeed(Lons,Lats,obtime):
         xind = np.argmin(np.absolute(lon - Lons[0]))
         yind = np.argmin(np.absolute(lat - Lats[0]))
 
-        udata = np.mean(usft[:, yind, xind], axis=0)
-        vdata = np.mean(vsft[:, yind, xind], axis=0)
+        if 'bufferzone' in kwargs:
+            xleft,yleft,xright,yright=kwargs['bufferzone']
+
+            ys=np.max([yind-yleft,0])
+            ye=np.min([yind+yright+1,len(lat)])
+
+            xs = np.max([xind - xleft, 0])
+            xe = np.min([xind + xright+1, len(lon)])
+
+            udata = np.mean(usft[:, ys:ye, xs:xe], axis=0)
+            vdata = np.mean(vsft[:, ys:ye, xs:xe], axis=0)
+        else:
+            udata = np.mean(usft[:, yind, xind], axis=0)
+            vdata = np.mean(vsft[:, yind, xind], axis=0)
+
         dsu.close()
         dsv.close()
 
-        return[udata,vdata]
+        if 'bufferzone' in kwargs:
+
+            outlat=np.stack([lat[ys:ye]]*(xe-xs),axis=1)
+            outlon=np.stack([lon[xs:xe]]*(ye-ys),axis=0)
+
+            return [outlat,outlon,udata,vdata]
+
+        return [udata,vdata]
 
     else:
         nx, ny = Lons.shape
@@ -959,30 +976,39 @@ def getAODwind(Datadir,x0,y0,date,**kwargs):
 
         if righthv==True:
             # weighted average of u and v
-            uc = 0
-            vc = 0
+
             obweight = 0
             for iob in np.arange(len(obtime)):
                 # wind vector for each pixel
-                [u, v] = GetWindSpeed(np.array([[x0]]), np.array([[y0]]), obtime[iob])
+                if 'bufferzone' in kwargs:
+                    [metlat,metlon,u, v] = \
+                        GetWindSpeed(np.array([[x0]]), np.array([[y0]]), obtime[iob],bufferzone=kwargs['bufferzone'])
+                else:
+                    metlat=y0
+                    metlon=x0
+                    [u, v] = GetWindSpeed(np.array([[x0]]), np.array([[y0]]), obtime[iob])
+
                 obsum = np.sum(AODno[iob, :, :])
-                uc = uc + u * obsum
-                vc = vc + v * obsum
+
+                if iob==0:
+                    uc = u * obsum
+                    vc = v * obsum
+                else:
+                    uc = uc + u * obsum
+                    vc = vc + v * obsum
+
                 obweight = obweight + obsum
 
-            uc = uc / obweight
-            vc = vc / obweight
-            outuc=uc
-            outvc=vc
+            outuc = uc / obweight
+            outvc = vc / obweight
 
             Finduv=True
 
         obno=obno+1
 
     if (obno<=0) | (Finduv==False):
-        return [strhvs, 0, 0, 0, 0, 0, 0, 0]
-
-    return [strhvs, hvLats, hvLons, outAOD,outAODsq, outno, outuc, outvc]
+        return [strhvs, 0, 0, 0, 0, 0, 0, 0,0,0]
+    return [strhvs, hvLats, hvLons, outAOD,outAODsq, outno, metlat,metlon,outuc, outvc]
 
 
 
