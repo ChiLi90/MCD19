@@ -7,6 +7,8 @@ from datetime import timedelta
 import pyproj
 import csv
 import scipy.interpolate as impdata
+import SpatialFunctions
+
 # @jit("int64[:](float64[:],float32[:])",nopython=True,nogil=True)
 # def jit_findnearest (x,y):
 #
@@ -90,8 +92,7 @@ def AccumAOD(Aerdir, strhv, start, end,**kwargs):
 
         #for this date, at most only one file is found
         Aerfile = glob.glob(Aerdir + stryymm+'/' + 'MCD19A2.A' + strdate + '.' + strhv + '.006' + '*.hdf')
-        print (Aerdir + stryymm+'/' + 'MCD19A2.A' + strdate + '.' + strhv + '.006' + '*.hdf')
-        print (Aerfile)
+
         if len(Aerfile)==0:
             print("No file found for date: " + strdate)
             continue
@@ -125,7 +126,7 @@ def AccumAOD(Aerdir, strhv, start, end,**kwargs):
             Lon=orLon
             georange=[np.min(Lon),np.min(Lat),np.max(Lon),np.max(Lat)]
 
-        print (obtime)
+
 
         #for each orbit
         for iob in np.arange(len(obtime)):
@@ -461,15 +462,27 @@ def AccumAOD(Aerdir, strhv, start, end,**kwargs):
 
 def GetWindSpeed(Lons,Lats,obtime,**kwargs):
 
-    ECdir = '/Users/chili/Downloads/AvgMCD/'
+    ECdir = '/global/scratch/chili/ERA5UV/'
     # extract year month day UTC from obtime
-    year = np.int(obtime[0:4])
-    dayno = np.int(obtime[4:7])
-    hour = np.int(obtime[7:9]) + np.float(obtime[9:11]) / 60.
 
-    refday = datetime(year, 1, 1) + timedelta(days=(dayno - 1))
+    datetype=kwargs['datetype']
+    if datetype=='NOD':
+        year = np.int(obtime[0:4])
+        dayno = np.int(obtime[4:7])
+        hour = np.int(obtime[7:9]) + np.float(obtime[9:11]) / 60.
 
-    stryymm = '{:10.0f}'.format(year).strip() + '{:10.0f}'.format(refday.month + 100).strip()[1:3]
+        refday = datetime(year, 1, 1) + timedelta(days=(dayno - 1))
+
+        stryymm = '{:10.0f}'.format(year).strip() + '{:10.0f}'.format(refday.month + 100).strip()[1:3]
+    if datetype=='YYMM':
+        year = np.int(obtime[0:4])
+        month=np.int(obtime[4:6])
+        day=np.int(obtime[6:8])
+        refday = datetime(year, month, day)
+        stryymm = obtime[0:6]
+        hour = np.int(obtime[8:10]) + np.float(obtime[10:12]) / 60.
+
+
 
     ECUfile = ECdir + stryymm + '.U.nc'
     ECVfile = ECdir + stryymm + '.V.nc'
@@ -525,6 +538,8 @@ def GetWindSpeed(Lons,Lats,obtime,**kwargs):
             return [outlat,outlon,udata,vdata]
 
         return [udata,vdata]
+
+
 
     else:
         nx, ny = Lons.shape
@@ -658,64 +673,122 @@ def Rotate2East(U0, V0, xs, ys):
 
     return [xr,yr]
 
+def ReadTROPOMI(file,dataname,datauncname,minqa,maxrelerr):
+    #dataname="carbonmonoxide_total_column"
+    #datauncname="carbonmonoxide_total_column_precision"
+    #minqa=0.5
+    #maxrealerr=0.3
+    try:
+        fds = Dataset(file, 'r')
+        ds = fds.groups['PRODUCT']
+        lat = ds["latitude"][:]
+        lon = ds["longitude"][:]
+        CO = ds[dataname][:]
+        COunc = ds[datauncname][:]
+        QA = ds["qa_value"][:]
+
+        hours = ds["delta_time"][:] / 1000. / 3600.
+
+        hours = np.stack([hours] * (CO.shape)[2], axis=2)
+
+        CO[(QA < minqa) | (COunc / CO > maxrelerr)] = np.nan
+
+        fds.close()
+
+        return [np.squeeze(CO), np.squeeze(COunc), np.squeeze(hours), np.squeeze(lat), np.squeeze(lon)]
+    except:
+        print('File not openable: ' + file)
+        return [0, 0, 0, 0, 0]
+
+
+
+
+
+
+
+
 def ReadAOD(Aerfile,**kwargs):
 
-    ds = SD(Aerfile, SDC.READ)
-    Aobj=ds.select('Optical_Depth_047')
-    AOD = Aobj.get()*0.001
-    obtime = ds.attributes()['Orbit_time_stamp'].split()
+    try:
+        ds = SD(Aerfile, SDC.READ)
+        Aobj = ds.select('Optical_Depth_047')
+        AOD = Aobj.get() * 0.001
+        AODunc = ds.select('AOD_Uncertainty').get() * 0.0001
+        obtime = ds.attributes()['Orbit_time_stamp'].split()
 
-    QA = ds.select('AOD_QA').get()
+        QA = ds.select('AOD_QA').get()
 
-    # if np.array(np.isnan(AOD)==False).size > 0:
-    #     (values, counts) = np.unique(QA[AOD>0.], return_counts=True)
-    #     ind = np.argmax(counts)
-    #     print values[ind]
+        AOD[(QA != 1) & (QA != 8193) & (QA != 16385) & (QA != 12289) & (QA != 20481) & (QA != 4097) & \
+            (QA != 17) & (QA != 8209) & (QA != 16401) & (QA != 12305) & (QA != 20497) & (QA != 4113) & \
+            (QA != 25) & (QA != 8217) & (QA != 16409) & (QA != 12313) & (QA != 20505) & (QA != 4121)] = np.nan
+        AOD[((AODunc / AOD) > 0.3)|(AOD<0.)|(AODunc<0.)] = np.nan
+        AODunc[np.isnan(AOD)] = np.nan
 
-    AOD[(QA!=1) & (QA!=8193) & (QA!=16385) & (QA!=12289) & (QA!=20481) & (QA!=4097) & \
-        (QA!=17) & (QA!=8209) & (QA!=16401) & (QA!=12305) & (QA!=20497) & (QA!=4113) & \
-        (QA != 25) & (QA != 8217) & (QA != 16409) & (QA != 12313) & (QA != 20505) & (QA != 4121) ]=np.nan
+        if 'SMokeHeight' in kwargs:
+            if kwargs['SMokeHeight']==True:
+                SmokeHeight = ds.select('Injection_Height').get()
+                SmokeHeight[np.isnan(AOD)]=np.nan
 
-    if('CalLatLon' in kwargs):
-        if kwargs['CalLatLon']==True:
+        if ('CalLatLon' in kwargs):
+            if kwargs['CalLatLon'] == True:
 
-            [ny,nx]=(AOD[0,:,:].shape)
-            lookup1 = 'UpperLeftPointMtrs'
-            lookup2 = 'LowerRightMtrs'
-            StrMeta=ds.attributes()['StructMetadata.0']
-            for line in StrMeta.splitlines():
-                if lookup1 in line:
-                    xy=(line.split('('))[1].split(',')
-                    xul=np.float(xy[0])
-                    yul=np.float((xy[1].split(')'))[0])
-                if lookup2 in line:
-                    xy = (line.split('('))[1].split(',')
-                    xlr = np.float(xy[0])
-                    ylr = np.float((xy[1].split(')'))[0])
-                    break
+                [ny, nx] = (AOD[0, :, :].shape)
+                lookup1 = 'UpperLeftPointMtrs'
+                lookup2 = 'LowerRightMtrs'
+                StrMeta = ds.attributes()['StructMetadata.0']
+                for line in StrMeta.splitlines():
+                    if lookup1 in line:
+                        xy = (line.split('('))[1].split(',')
+                        xul = np.float(xy[0])
+                        yul = np.float((xy[1].split(')'))[0])
+                    if lookup2 in line:
+                        xy = (line.split('('))[1].split(',')
+                        xlr = np.float(xy[0])
+                        ylr = np.float((xy[1].split(')'))[0])
+                        break
+                XDim = xul + (0.5 + np.arange(nx)) * (xlr - xul) / nx
+                YDim = yul + (0.5 + np.arange(ny)) * (ylr - yul) / ny
+                # YDim=np.flip(YDim)
+                xv, yv = np.meshgrid(XDim, YDim)
 
-            XDim=xul+(0.5+np.arange(nx))*(xlr-xul)/nx
-            YDim=yul+(0.5+np.arange(ny))*(ylr-yul)/ny
-            #YDim=np.flip(YDim)
-            xv, yv = np.meshgrid(XDim, YDim)
+                # In basemap, the sinusoidal projection is global, so we won't use it.
+                # Instead we'll convert the grid back to lat/lons.
+                sinu = pyproj.Proj("+proj=sinu +R=6371007.181 +nadgrids=@null +wktext")
 
-            # In basemap, the sinusoidal projection is global, so we won't use it.
-            # Instead we'll convert the grid back to lat/lons.
-            sinu = pyproj.Proj("+proj=sinu +R=6371007.181 +nadgrids=@null +wktext")
+                wgs84 = pyproj.Proj("+proj=latlong +R=6371007.181")
+                lon, lat = pyproj.transform(sinu, wgs84, xv, yv)
+        ds.end()
 
-            wgs84 = pyproj.Proj("+proj=latlong +R=6371007.181")
-            lon, lat = pyproj.transform(sinu, wgs84, xv, yv)
+        #return data
+        if ('CalLatLon' in kwargs):
+            if kwargs['CalLatLon'] == True:
 
+                if 'SMokeHeight' in kwargs:
+                    if kwargs['SMokeHeight'] == True:
+                        return [AOD,AODunc,SmokeHeight,obtime,lat,lon]
 
+                return [AOD, AODunc, obtime, lat, lon]
 
-    ds.end()
+        if 'SMokeHeight' in kwargs:
+            if kwargs['SMokeHeight'] == True:
+                return [AOD, AODunc, SmokeHeight, obtime]
 
-    if ('CalLatLon' in kwargs):
-        if kwargs['CalLatLon'] == True:
-            return [AOD,obtime,lat,lon]
+        return [AOD, AODunc, obtime]
+    except:
 
-    return [AOD, obtime]
+        # return data
+        print('File not openable: ' + file)
+        if ('CalLatLon' in kwargs):
+            if kwargs['CalLatLon'] == True:
+                if 'SMokeHeight' in kwargs:
+                    if kwargs['SMokeHeight'] == True:
+                        return [[0], [0], [0], [0], [0],[0]]
+                return [[0], [0], [0], [0], [0]]
 
+        if 'SMokeHeight' in kwargs:
+            if kwargs['SMokeHeight'] == True:
+                return [[0], [0], [0],[0]]
+        return [[0], [0], [0]]
 
 def ReadTile(Tilefile):
     ds = Dataset(Tilefile, 'r')
@@ -855,7 +928,8 @@ def CSVload(file):
         csvdata.append([[x.strip() for x in row] for row in csv_reader])
     return np.array(csvdata)[0,:,:]
 
-def gethv(Datadir,x0,y0,mindist):
+def gethv(Datadir,x0,y0,**kwargs):
+
 
     files=glob.glob(Datadir+'2002.02.23/*.hdf')
     strhv=[]
@@ -889,10 +963,17 @@ def gethv(Datadir,x0,y0,mindist):
         lon, lat = pyproj.transform(sinu, wgs84, xv, yv)
         ds.end()
 
-        distance = (lat - y0) ** 2 + (lon - x0) ** 2
+        if 'mindist' in kwargs:
+            mindist = kwargs['mindist']
+            distance = (lat - y0) ** 2 + (lon - x0) ** 2
+            if np.min(distance) < mindist:
+                strhv = np.append(strhv, ((Aerfile.split('/'))[-1].split('.'))[-4])
 
-        if np.min(distance) < mindist:
-            strhv=np.append(strhv,((Aerfile.split('/'))[-1].split('.'))[-4])
+        if 'dx' in kwargs:
+            dx = kwargs['dx']
+            dy = kwargs['dy']
+            if (np.min(np.absolute(lat-y0))<dy) & (np.min(np.absolute(lon-x0))<dx):
+                strhv = np.append(strhv, ((Aerfile.split('/'))[-1].split('.'))[-4])
 
 
     return strhv
@@ -900,20 +981,42 @@ def gethv(Datadir,x0,y0,mindist):
 
 def getAODwind(Datadir,x0,y0,date,**kwargs):
 
-    if 'mindist' in kwargs:
-        mindist=kwargs['mindist']
-    else:
-        mindist=100.    #1000km?
+
+    res=kwargs['resolution']
+    dx = kwargs['dx']
+    dy = kwargs['dy']
+    nx=np.int(np.round(2*dx/res))
+    ny = np.int(np.round(2*dy/res))
 
     # "date" is in the format of YYYY.MM.DD
     if 'strhv' in kwargs:
         strhvs=kwargs['strhv']
     else:
-        strhvs=gethv(Datadir,x0,y0,mindist)
-
+        if 'mindist' in kwargs:
+            mindist = kwargs['mindist']
+            strhvs = gethv(Datadir, x0, y0, mindist=mindist)
+        else:
+            strhvs = gethv(Datadir, x0, y0, dx=dx, dy=dy)
     obno = 0
 
-    Finduv=False
+    if 'TA' in kwargs:
+        TA=kwargs['TA']
+
+    if 'SmokeHeight' in kwargs:
+        SmokeHeight=kwargs['SmokeHeight']
+    else:
+        SmokeHeight=False
+
+
+    outAOD=np.zeros([ny,nx])-999
+    outAODunc = np.zeros([ny, nx])-999
+    outSample = np.zeros([ny, nx],dtype=int)
+    outhours = np.zeros([ny, nx])-999
+    outu = np.zeros([ny, nx])-999
+    outv = np.zeros([ny, nx])-999
+    if SmokeHeight == True:
+        outSmokeH=np.zeros([ny,nx])-999
+
     for strhv in strhvs:
 
         files = glob.glob(Datadir + date + '/' + 'MCD19*.' + strhv + '.*hdf')
@@ -922,94 +1025,205 @@ def getAODwind(Datadir,x0,y0,date,**kwargs):
             print("wrong number of files for date " + date+' and '+strhv + ': ', len(files))
             continue
 
-        [AOD, obtime, hvLat, hvLon] = ReadAOD(files[0], CalLatLon=True)
+        if SmokeHeight==False:
+            [AOD, AODunc,obtime, hvLat, hvLon] = ReadAOD(files[0], CalLatLon=True)
+        else:
+            [AOD, AODunc, SmokeH, obtime, hvLat, hvLon] = ReadAOD(files[0], CalLatLon=True,SMokeHeight=SmokeHeight)
 
-        righthv=False
-        distance = (hvLat - y0) ** 2 + (hvLon - x0) ** 2
-        if np.min(distance)<0.0002:
-            righthv=True
+        hvnx,hvny=hvLat.shape
 
-        [nx, ny] = hvLat.shape
+        if 'TA' in kwargs:
+            TAinds = np.array((np.char.find(obtime, TA) >= 0).nonzero()).flatten()
 
-        #weighted average of AOD
-        AOD[(AOD <= 0) | np.isnan(AOD)] = 0.
-        AODno=np.zeros([len(obtime),nx,ny],dtype=int)
-        AODno[AOD>0]=1
-        AODsample = np.sum(AODno, axis=0)
-        AODob = np.sum(AOD, axis=0)
-        AODobsq = np.sum(AOD**2,axis=0)
+            if np.array(TAinds).flatten().size <= 0:
+                continue
+            AOD = AOD[TAinds, :, :]
+            AODunc = AODunc[TAinds, :, :]
+            if SmokeHeight == True:
+                SmokeH = SmokeH[TAinds, :, :]
+            obtime=np.array(obtime)[TAinds]
+            print(obtime)
 
-        if (np.all(AODob <= 0.)) | (np.all(np.isnan(AODob))):
-            print('Date ' + date + ' contains no meaningful AOD')
-
+        if (np.all(AOD <= 0.)) | (np.all(np.isnan(AOD))):
             continue
 
-        if 'rebin' in kwargs:
-            sfactor = kwargs['rebin']  # rebin by a factor of 5/10/20...
-            newx = nx / sfactor
-            newy = ny / sfactor
-            hvLat = rebin(hvLat, [newx, newy])
-            hvLon = rebin(hvLon, [newx, newy])
-            AODob = rebin(AODob, [newx, newy],Add=True)
-            AODsample = rebin(AODsample, [newx, newy], Add=True)
-            AODobsq=rebin(AODobsq,[newx,newy],Add=True)
+        # We only select (at most) one TERRA and one AQUA overpass for each day and each hv
+        recordno=0
+        for iob in np.arange(len(obtime)):
+            ovpsinds=(AOD[iob, :, :]>0.).nonzero()
+            if np.array(ovpsinds).size>recordno:
+                recordno=np.array(ovpsinds).size
+                obt = obtime[iob]
+                AODob = AOD[iob, :, :]
+                AODuncob = AODunc[iob, :, :]
+                if SmokeHeight == True:
+                    SmokeHob = SmokeH[iob, :, :]
 
-        AODob[AODsample>0]=AODob[AODsample>0]/AODsample[AODsample>0]
-        AODobsq[AODsample > 0] = AODobsq[AODsample > 0] / AODsample[AODsample > 0]
+        if recordno==0:
+            continue
 
-        if obno==0:
+        if (np.all(AODob <= 0.)) | (np.all(np.isnan(AODob))):
+            continue
 
-            hvLats=hvLat
-            hvLons=hvLon
-            outAOD=AODob
-            outno=AODsample
-            outAODsq=AODobsq
+        [metlat, metlon, u, v] = \
+            GetWindSpeed(np.array([[x0]]), np.array([[y0]]), obt, bufferzone=kwargs['bufferzone'], datetype='NOD')
 
+        AODsample = AODob - AODob
+        AODsample[AODob > 0.] = 1
+
+        obhr = np.zeros([hvnx, hvny])
+        obhr[AODob > 0] = np.int(obt[7:9]) + np.float(obt[9:11]) / 60.
+
+        if SmokeHeight == False:
+            AODdata = np.stack((AODob, AODuncob ** 2, obhr), axis=2)
         else:
+            AODdata = np.stack((AODob, AODuncob ** 2, obhr, SmokeHob), axis=2)
 
-            hvLats = np.append(hvLats,hvLat,axis=0)
-            hvLons = np.append(hvLons,hvLon,axis=0)
-            outAOD = np.append(outAOD,AODob,axis=0)
-            outAODsq = np.append(outAODsq,AODobsq,axis=0)
-            outno = np.append(outno,AODsample,axis=0)
+        [rgAOD, rgsample] = SpatialFunctions.Regrid3Ddata(AODdata, AODsample, hvLat, hvLon, x0, y0, dx, dy, res)
+
+        inds = (rgsample > 0).nonzero()
+        if np.array(inds).size <= 0:
+            continue
+
+        outAOD[inds] = (rgAOD[:, :, 0])[inds]
+        outAODunc[inds] = np.sqrt((rgAOD[:, :, 1])[inds] / rgsample[inds])
+
+        outSample[inds] = rgsample[inds]
+        outhours[inds] = (rgAOD[:, :, 2])[inds]
+        if SmokeHeight == True:
+            outSmokeH[inds] = (rgAOD[:, :, 3])[inds]
+
+        uvdata = np.stack((u, v), axis=2)
+        [rguv, uvsample] = SpatialFunctions.Regrid3Ddata(uvdata, (u - u + 1).astype(int), \
+                                                         metlat, metlon, x0, y0, dx, dy, res)
+
+        rgu = rguv[:, :, 0]
+        rgv = rguv[:, :, 1]
+
+        rgu[uvsample <= 0] = np.nan
+        rgv[uvsample <= 0] = np.nan
+        outu[inds] = rgu[inds]
+        outv[inds] = rgv[inds]
+
+        obno = obno + 1
+
+    outu[outu<-990]=np.nan
+    outv[outv<-990]=np.nan
+    outAOD[outAOD<-990]=np.nan
+    outhours[outhours<-990]=np.nan
+    outAODunc[outAODunc<-990]=np.nan
+    if SmokeHeight == True:
+        outSmokeH[outSmokeH<=-990.]=np.nan
+
+    if obno==0:
+        if SmokeHeight==False:
+            return [strhvs, 0, 0, 0, 0, 0, 0]
+        else:
+            return [strhvs, 0, 0, 0, 0, 0, 0,0]
+    if SmokeHeight==False:
+        return [strhvs, outAOD, outAODunc, outSample, outhours, outu, outv]
+    else:
+        return [strhvs, outAOD, outAODunc, outSmokeH, outSample, outhours, outu, outv]
 
 
-        if righthv==True:
-            # weighted average of u and v
 
-            obweight = 0
-            for iob in np.arange(len(obtime)):
-                # wind vector for each pixel
-                if 'bufferzone' in kwargs:
-                    [metlat,metlon,u, v] = \
-                        GetWindSpeed(np.array([[x0]]), np.array([[y0]]), obtime[iob],bufferzone=kwargs['bufferzone'])
-                else:
-                    metlat=y0
-                    metlon=x0
-                    [u, v] = GetWindSpeed(np.array([[x0]]), np.array([[y0]]), obtime[iob])
+def getTROPOMIwind(Datadir,filekey,dataname,datauncname,x0,y0,strdate,**kwargs):
+    # dataname="carbonmonoxide_total_column"
+    # datauncname="carbonmonoxide_total_column_precision"
+    # minqa=0.5
+    # maxrealerr=0.3
+    # filekey=''S5P_OFFL_L2__CO_____''
 
-                obsum = np.sum(AODno[iob, :, :])
+    dx = kwargs['dx']
+    dy = kwargs['dy']
+    res = kwargs['resolution']
 
-                if iob==0:
-                    uc = u * obsum
-                    vc = v * obsum
-                else:
-                    uc = uc + u * obsum
-                    vc = vc + v * obsum
+    minqa=0.5
+    maxrelerr=1.
+    if 'minqa' in kwargs:
+        minqa=kwargs['minqa']
 
-                obweight = obweight + obsum
+    if 'maxrelerr' in kwargs:
+        maxrelerr=kwargs['maxrelerr']
 
-            outuc = uc / obweight
-            outvc = vc / obweight
-
-            Finduv=True
-
-        obno=obno+1
-
-    if (obno<=0) | (Finduv==False):
-        return [strhvs, 0, 0, 0, 0, 0, 0, 0,0,0]
-    return [strhvs, hvLats, hvLons, outAOD,outAODsq, outno, metlat,metlon,outuc, outvc]
+    nx = np.int(np.round(2 * dx / res + 1))
+    ny = np.int(np.round(2 * dy / res + 1))
 
 
+    obno = 0
+
+    outCO = np.zeros([ny, nx])
+    outCOunc = np.zeros([ny,nx])
+    outSample = np.zeros([ny, nx], dtype=int)
+    outhours = np.zeros([ny, nx])
+    outu = np.zeros([ny, nx])
+    outv = np.zeros([ny, nx])
+
+    files = glob.glob(Datadir + filekey + strdate + '*.nc')
+
+    if (len(files) < 1):
+        print("wrong number of files for date " + strdate + ': ', len(files))
+        return [0,0,0,0,0,0]
+
+    for COfile in files:
+        [CO, COunc, hours, lat, lon]=ReadTROPOMI(COfile,dataname,datauncname,minqa,maxrelerr)
+        if (np.all(CO <= 0.)) | (np.all(np.isnan(CO))):
+            continue
+
+        inds=((CO>0)&(lat>=(y0-dy))&(lat<=(y0+dy))&(lon>=(x0-dx))&(lon<=(x0+dx))).nonzero()
+
+        if np.array(inds).flatten().size<=0:
+            continue
+
+        hvnx, hvny = CO.shape
+        COsample = np.zeros([hvnx, hvny], dtype=int)
+
+        COsample[CO > 0] = 1
+        hour=np.mean(hours[inds])
+
+        strhour=('{:10.0f}'.format(np.round(hour)+100).strip())[1:3]
+        obt=strdate+strhour+'00A'
+
+
+        [metlat, metlon, u, v] = \
+            GetWindSpeed(np.array([[x0]]), np.array([[y0]]), obt, bufferzone=kwargs['bufferzone'],datetype='YYMM')
+
+        # for each orbit, regrid to the regular grids (the next orbit will overwrite the previous one but minor effects)
+
+
+
+        COdata = np.stack((CO, COunc, hours), axis=2)
+        uvdata = np.stack((u, v), axis=2)
+
+        [rgCO, rgsample] = SpatialFunctions.Regrid3Ddata(COdata, \
+                                                         COsample, lat, lon, y0 - dy, y0 + dy, x0 - dx, x0 + dx,res)
+
+        [rguv, uvsample] = SpatialFunctions.Regrid3Ddata(uvdata, (u - u + 1).astype(int), \
+                                                         metlat, metlon, y0 - dy, y0 + dy, x0 - dx, x0 + dx, res)
+
+        rgu = rguv[:, :, 0]
+        rgv = rguv[:, :, 1]
+
+        rgu[uvsample <= 0] = np.nan
+        rgv[uvsample <= 0] = np.nan
+
+        inds = (rgsample > 0).nonzero()
+        outCO[inds] = (rgCO[:, :, 0])[inds]
+        outCOunc[inds]=(rgCO[:, :, 1])[inds]
+        outSample[inds] = rgsample[inds]
+        outhours[inds] = (rgCO[:, :, 2])[inds]
+
+        outu[inds] = rgu[inds]
+        outv[inds] = rgv[inds]
+
+        obno = obno + 1
+
+    outu[outu == 0.] = np.nan
+    outv[outv == 0] = np.nan
+
+    if obno==0:
+        return [0,0,0,0,0,0]
+
+    return [outCO,outCOunc,outSample, outhours,outu, outv]
 
 

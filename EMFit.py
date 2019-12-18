@@ -61,6 +61,7 @@ def EMFFit (xW,xC,AvgC,AvgW,xmax,minx0):
 
 def EMGFit(x,data,samplewd,minx0,nSample,**kwargs):
 
+    avgw10=minx0/3600.
     # initial guess of each parameter
     nW = len(x)
     ini_a = np.sum((data[1:] + data[0:nW - 1]) / 2. * (x[1:] - x[0:nW - 1]))
@@ -77,9 +78,16 @@ def EMGFit(x,data,samplewd,minx0,nSample,**kwargs):
     design=lhs(3,samples=nSample)
     means=np.array([ini_a,minx0*3.,FWHM])
     stds=means
+    Gaussian = False
 
 
     DoFixSource=False
+
+    GauDecay=False
+
+    if 'GauDecay' in kwargs:
+        if kwargs['GauDecay']==True:
+            GauDecay = True
 
     if 'fixSource' in kwargs:
         if kwargs['fixSource']==True:
@@ -89,6 +97,9 @@ def EMGFit(x,data,samplewd,minx0,nSample,**kwargs):
 
             DoFixSource=True
 
+    if 'fixparam' in kwargs:
+        fixpars=kwargs['fixparam']
+        fixvals=kwargs['fixvalue']
 
 
     if 'solver' in kwargs:
@@ -108,10 +119,9 @@ def EMGFit(x,data,samplewd,minx0,nSample,**kwargs):
 
         if np.min(fitpars)<0:
             continue
+
         try:
-
             if solver == 'lmfit':
-
                 params = Parameters()
                 params.add('a', value=fitpars[0], min=0.)  # x-direction integration of total burden
                 params.add('x0', value=fitpars[1], min=1. / 3)  # x-direction distance in one-lifetime
@@ -152,21 +162,51 @@ def EMGFit(x,data,samplewd,minx0,nSample,**kwargs):
                 if DoFixSource:
                     bounds.lb[2] = fixxsc
                     bounds.ub[2] = fixxsc
-		
-		        #we set x0>=sigma in the fitting, and reject results when x0==sigma
-                #lconstr = LinearConstraint([[0, 2, 1, 2, 0],[0,1,0,-2,0]], [-np.inf,0.], [x[-1],np.inf])
-                lconstr = LinearConstraint([[0,1,1,1,0],[0,1,0,-1,0]],[-np.inf,0.],[x[-1],np.inf])
-                nlconstr = NonlinearConstraint(EMGNLConstr1, -np.inf, 20.)
+
+                if 'fixparam' in kwargs:
+                    for ipar in np.arange(len(fixvals)):
+                        bounds.lb[fixpars[ipar]] = fixvals[ipar]
+                        bounds.ub[fixpars[ipar]] = fixvals[ipar]
+                        x0[fixpars[ipar]] = fixvals[ipar]
+
+                        if (fixpars[ipar] == 1) & (np.absolute(fixvals[ipar]) <= 1.e-20):
+                            Gaussian = True
+
+                        # we set x0>=sigma in the fitting, and reject results when x0==sigma
+                # lconstr = LinearConstraint([[0, 2, 1, 2, 0],[0,1,0,-2,0]], [-np.inf,0.], [x[-1],np.inf])
+                # lconstr = LinearConstraint([[0,1,1,1,0],[0,1,0,-1,0]],[-np.inf,0.],[x[-1],np.inf])
+                if GauDecay == False:
+                    nlconstr = NonlinearConstraint(EMGNLConstr1, -np.inf, 20.)
                 # args = {'x0': x[0], 'xca': fixxca, 'xcc': fixxcc}
                 # nlconstr = NonlinearConstraint(EMANLConstr2, -np.inf, 0.)
-                res = scipyminimize(EMGchisqr1, x0, args=(x, data), method='trust-constr', \
-                                    constraints=[lconstr,nlconstr], options={'verbose': 0},
-                                    bounds=bounds)  # constraints=[lconstr, nlconstr],
-                Hess = nd.Hessian(EMGchisqr1)(res.x, x, data)
+                if Gaussian == True:
+                    res = scipyminimize(EMGchisqr2, x0, args=(x, data), method='trust-constr', \
+                                        options={'verbose': 0}, \
+                                        bounds=bounds)  # constraints=[lconstr, nlconstr],
+                    Hess = nd.Hessian(EMGchisqr2)(res.x, x, data)
 
-                pars = res.x
+                    pars = res.x
 
-                chisqr = EMGchisqr1(pars, x, data)
+                    chisqr = EMGchisqr2(pars, x, data)
+                elif GauDecay == True:
+                    res = scipyminimize(EMGchisqr3, x0, args=(x, data, avgw10 * 3.6), method='trust-constr', \
+                                        options={'verbose': 0}, \
+                                        bounds=bounds)  # constraints=[lconstr, nlconstr],
+                    Hess = nd.Hessian(EMGchisqr3)(res.x, x, data, avgw10 * 3.6)
+
+                    pars = res.x
+
+                    chisqr = EMGchisqr3(pars, x, data, avgw10 * 3.6)
+                else:
+                    res = scipyminimize(EMGchisqr1, x0, args=(x, data), method='trust-constr', \
+                                        constraints=[nlconstr], options={'verbose': 0}, \
+                                        bounds=bounds)  # constraints=[lconstr, nlconstr],
+                    Hess = nd.Hessian(EMGchisqr1)(res.x, x, data)
+
+                    pars = res.x
+
+                    chisqr = EMGchisqr1(pars, x, data)
+
                 sigmas = np.sqrt(np.linalg.inv(Hess) * chisqr / (data.size - pars.size))
 
                 params = Parameters()
@@ -189,6 +229,9 @@ def EMGFit(x,data,samplewd,minx0,nSample,**kwargs):
                 print ("solver wrong! specify one of these: pyipm, trust-constr, lmfit !")
                 return [False, False]
 
+
+
+
         except:
             continue
 
@@ -197,6 +240,7 @@ def EMGFit(x,data,samplewd,minx0,nSample,**kwargs):
     else:
 
         return [EMGout,True]
+
 
 
 def EMAFit(x,data,samplewd,minx0,nSample,**kwargs):
@@ -363,6 +407,7 @@ def EMAFit(x,data,samplewd,minx0,nSample,**kwargs):
 
 
                 nlconstr = NonlinearConstraint(EMANLConstr1, -np.inf, 20.)
+
                 res = scipyminimize(EMAchisqr1, x0, args=(x, data), method='trust-constr', \
                                     constraints=[lconstr,nlconstr], options={'verbose': 0},
                                     bounds=bounds)  # constraints=[lconstr, nlconstr],
@@ -422,14 +467,30 @@ def EMAFit(x,data,samplewd,minx0,nSample,**kwargs):
 def EMG (x,a,x0,xsc,sigma,b,**kwargs):
 
     sqrt2=np.sqrt(2.)
-
-    return 0.5 * a / x0 * np.exp((xsc - x) / x0 + (sigma ** 2) / 2. / (x0 ** 2)) \
-           * serfc((xsc - x) /sqrt2 / sigma + sigma /sqrt2 / x0) + b
+    if 'Gaussian' in kwargs:
+        return a/np.sqrt(2*np.pi)/sigma*np.exp(-1*(x**2)/2/(sigma**2))+b
+    if 'avgw' in kwargs:
+        efct=sigma**2/(x-xsc)/x0
+        ld=a / (1 + efct) * np.exp(-1 * (x - xsc) / x0 * (1 - 0.5 * efct)) + b
+        ld[x<=xsc]=b
+        return ld
+    else:
+        return 0.5 * a / x0 * np.exp((xsc - x) / x0 + (sigma ** 2) / 2. / (x0 ** 2)) \
+               * serfc((xsc - x) /sqrt2 / sigma + sigma /sqrt2 / x0) + b
 
 #Not fix source
 def EMGchisqr1(x,*args):
 
     return np.sum((EMGres1(x,*args))**2)
+
+def EMGchisqr3(x,*args):
+
+    return np.sum((EMGres1(x,*args,avgw=True))**2)
+
+def EMGchisqr2(x, *args):
+
+    return np.sum((EMGres1(x, *args, Gaussian=True)) ** 2)
+
 
 #fix source
 
@@ -437,9 +498,14 @@ def EMAchisqr1(x,*args):
 
     return np.sum((EMAres1(x,*args))**2)
 
-def EMGres1(x,*args):
+def EMGres1(x,*args,**kwargs):
 
-    return EMG(args[0],x[0],x[1],x[2],x[3],x[4])-args[1]
+    if 'Gaussian' in kwargs:
+        return EMG(args[0], x[0], x[1], x[2], x[3], x[4], Gaussian=True) - args[1]
+    if 'avgw' in kwargs:
+        return EMG(args[0], x[0], x[1], x[2], x[3], x[4], avgw=args[2]) - args[1]
+    else:
+        return EMG(args[0],x[0],x[1],x[2],x[3],x[4])-args[1]
 
 
 def EMAres1(x,*args):
@@ -458,9 +524,193 @@ def EMGNLConstr1(x):
     return np.exp(x[2]/x[1]+x[3] ** 2 / (2. * (x[1] ** 2)))
 
 
-#Exponentially modified aerosol function.
-#x,xa,xc,xsc should have the same units.
-#assume same source location (xsc, suitable for point-like sources) for c and a
+def EMG2DFit(x,y,data,x01h,samplewd,nSample,**kwargs):
+
+
+    #data is 2-D distribution of columns (e.g. AOD, SO2 mol/m2)
+    # initial guess of each parameter
+    #x,y always in the grid resolution (dxy==1)
+    #7 parameters to fit, similar in two different parameterizations
+    #samplewd: resolution, i.e. how many km represented by 1 grid
+
+    npar=7  #(a,x0,ux,uy,sigma,eta,b)
+
+    GauDecay = False
+    if 'GauDecay' in kwargs:
+        if kwargs['GauDecay'] == True:
+            GauDecay = True
+
+    if 'fixparam' in kwargs:
+        fixpars=kwargs['fixparam']
+        fixvals=kwargs['fixvalue']
+
+    # if GauDecay == False:
+    #     eta=kwargs['eta']
+
+    if 'solver' in kwargs:
+        solver=kwargs['solver']
+    else:
+        solver='trust-constr'
+
+    #total emission (kg)
+    ini_a = np.sum(data)  #dxy==1
+    #location of maxima
+    maxxW = x[np.nanargmax(data)]
+    maxyW = y[np.nanargmax(data)]
+
+
+    if np.array(maxxW).size>1:
+        maxxW=maxxW[0]
+        maxyW = maxyW[0]
+    #take the across-wind data at maxima to estimate sigma
+
+    ydata=data[x==maxxW]
+    peaky=y[x==maxxW]
+    HM = (np.max(ydata) - np.min(ydata)) / 2.+np.min(ydata)
+    FWHM = np.absolute(peaky[np.nanargmin(np.absolute(ydata - HM))] - maxyW)*2./2.355
+
+    minchisquare = -1
+
+    #latin hypercube construction of initials
+    design=lhs(3,samples=nSample)
+    if GauDecay==False:
+        means=np.array([ini_a,x01h,FWHM])
+    else:
+        means=np.array([ini_a/x01h,x01h,FWHM])
+    stds=means
+    for i in np.arange(3):
+        design[:,i]=norm(loc=means[i],scale=stds[i]).ppf(design[:,i])
+
+    for jfit in np.arange(nSample+1):
+
+        if jfit < nSample:
+            fitpars = design[jfit, :]
+        else:
+            fitpars = means
+
+        if np.min(fitpars)<0:
+            continue
+        try:
+            if solver == 'trust-constr':  # Do the scipy.optimize fit using "trust_constr" method
+
+                # initials and bounds
+                x0 = np.zeros(npar)  # (a,x0,ux,uy,sigma,eta,b)
+                x0[0:2] = fitpars[0:2]
+                x0[2] = maxxW
+                x0[3] = maxyW
+                x0[4] = fitpars[2]
+                x0[5] = np.min(data)
+                x0[6] = 1.5*samplewd
+
+                bounds = Bounds([0., 1. / 3, np.min(x), np.min(y), 0.5, 0.,0.], \
+                                [np.inf, np.inf, np.max(x), np.max(y), np.inf, np.max(data),np.inf])
+
+                if 'fixparam' in kwargs:
+                    for ipar in np.arange(len(fixvals)):
+                        bounds.lb[fixpars[ipar]] = fixvals[ipar]
+                        bounds.ub[fixpars[ipar]] = fixvals[ipar]
+                        x0[fixpars[ipar]] = fixvals[ipar]
+
+                if GauDecay == False:
+                    # EMG Fitting
+
+                    nlconstr = NonlinearConstraint(EMG2DConstr, -np.inf, 20.)
+                    res = scipyminimize(EMG2Dchisqr, x0, args=(x, y, data), method='trust-constr', \
+                                        constraints=[nlconstr], options={'verbose': 0}, \
+                                        bounds=bounds)  # constraints=[lconstr, nlconstr],
+                    pars = res.x
+                    Hess = nd.Hessian(EMG2Dchisqr)(pars, x, y, data)
+
+                    chisqr = EMG2Dchisqr(pars, x, y, data)
+
+                elif GauDecay == True:
+                    # 2-D gaussian decay fitting
+                    res = scipyminimize(GauDecay2Dchisqr, x0, args=(x, y, data), method='trust-constr', \
+                                        options={'verbose': 0}, bounds=bounds)  # constraints=[lconstr, nlconstr],
+                    pars = res.x
+                    Hess = nd.Hessian(GauDecay2Dchisqr)(pars, x, y, data)
+
+                    chisqr = GauDecay2Dchisqr(pars, x, y, data)
+                else:
+                    print ("Something went wrong, the type of fitting is not determined!")
+                    return [False, False]
+
+                sigmas = np.sqrt(np.linalg.inv(Hess) * chisqr / (data.size - pars.size))
+
+                params = Parameters()
+                params.add('x0', value=pars[1], brute_step=sigmas[1, 1])
+                params.add('ux', value=pars[2], brute_step=sigmas[2, 2])
+                params.add('uy', value=pars[3], brute_step=sigmas[3, 3])
+                params.add('sigma', value=pars[4], brute_step=sigmas[4, 4])
+                if GauDecay == True:
+                    params.add('Qu', value=pars[0], brute_step=sigmas[0, 0])  # x-direction integration of total burden
+                else:
+                    params.add('a', value=pars[0], brute_step=sigmas[0, 0])  # x-direction integration of total burden
+                    params.add('eta', value=pars[6], brute_step=sigmas[6, 6])  # x-direction integration of total burden
+                params.add('b', value=pars[5], brute_step=sigmas[5, 5])
+
+                if (minchisquare == -1) | (chisqr < minchisquare):
+                    EMGout = params
+                    minchisquare = chisqr
+
+                if np.sqrt(minchisquare) / np.mean(data) < 0.01:
+                    break
+
+            else:
+
+                print ("solver wrong! specify one of these: pyipm, trust-constr, lmfit !")
+                return [False, False]
+
+        except:
+            print ("Unsuccessful Fitting!")
+            continue
+
+    if minchisquare == -1:
+        return [False,False]
+    else:
+
+        return [EMGout,True]
+
+def EMG2DConstr(x):
+    return np.exp(x[2] / x[1] + x[4] ** 2 / (2. * (x[1] ** 2)))
+
+
+def EMG2Dchisqr(x,*args):
+
+    return np.sum((EMG2D(args[0],args[1],*x)-args[2])**2)
+
+def GauDecay2Dchisqr(x,*args):
+
+    return np.sum((GauDecay2D(args[0],args[1],*x)-args[2])**2)
+
+#2-D distribution of column (#/m2 kg/m2, mol/mo2..) for a point source with 1st-order decay
+#a emission within 1 tau
+#sigma is the width close to the source point
+def EMG2D(x,y,a,x0,ux,uy,sigma,b,eta):
+
+    xp=x-ux
+    yp=y-uy
+    sqrt2=np.sqrt(2.)
+
+    sigmay=np.zeros(x.shape)+sigma
+    sigmay=np.sqrt(sigma**2+np.absolute(xp)*eta)
+
+    yfactor=np.exp(-0.5*(yp**2)/(sigmay**2))/sigmay
+    return a/2/np.sqrt(np.pi)/sqrt2/x0*np.exp(sigma**2/2./(x0**2)-xp/x0)*serfc((sigma/x0-xp/sigma)/sqrt2)*yfactor+b
+
+#qu=Q/u kg/m (a/x0) emission within 1 lifetime...
+def GauDecay2D(x,y,qu,x0,ux,uy,sigma,b):
+
+    xp = x - ux
+    yp = y - uy
+    efct=sigma**2/xp/x0
+
+    xfactor=np.exp(-1*xp/x0*(1.-0.5*efct))
+    yfactor=np.exp(-0.5*(1+efct)*((yp/sigma)**2))
+
+    return qu/np.sqrt(2.*np.pi)/sigma/np.sqrt(1+efct)*xfactor*yfactor+b
+
+
 def EMA (x,a,c,xa,xc,xsca,xscc,sigmaa,sigmac,b,**kwargs):
 
     #c=f*c
