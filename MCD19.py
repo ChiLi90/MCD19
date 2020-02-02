@@ -701,27 +701,27 @@ def ReadTROPOMI(file,dataname,datauncname,minqa,maxrelerr):
         return [0, 0, 0, 0, 0]
 
 
-
-
-
-
-
-
 def ReadAOD(Aerfile,**kwargs):
 
     try:
         ds = SD(Aerfile, SDC.READ)
         Aobj = ds.select('Optical_Depth_047')
         AOD = Aobj.get() * 0.001
+
+        #AOD uncertainty from the file is useless
         AODunc = ds.select('AOD_Uncertainty').get() * 0.0001
+
         obtime = ds.attributes()['Orbit_time_stamp'].split()
 
         QA = ds.select('AOD_QA').get()
 
         AOD[(QA != 1) & (QA != 8193) & (QA != 16385) & (QA != 12289) & (QA != 20481) & (QA != 4097) & \
-            (QA != 17) & (QA != 8209) & (QA != 16401) & (QA != 12305) & (QA != 20497) & (QA != 4113) & \
-            (QA != 25) & (QA != 8217) & (QA != 16409) & (QA != 12313) & (QA != 20505) & (QA != 4121)] = np.nan
-        AOD[((AODunc / AOD) > 0.3)|(AOD<0.)|(AODunc<0.)] = np.nan
+            (QA != 9) & (QA != 8201) & (QA != 16393) & (QA != 12297) & (QA != 20489) & (QA != 4105) ] = np.nan
+            #(QA != 17) & (QA != 8209) & (QA != 16401) & (QA != 12305) & (QA != 20497) & (QA != 4113) & \
+            #(QA != 25) & (QA != 8217) & (QA != 16409) & (QA != 12313) & (QA != 20505) & (QA != 4121)] = np.nan
+
+        AODunc[(np.isnan(AODunc)) | (AODunc<=0.)]=AOD[np.isnan(AODunc)| (AODunc<=0.)]*0.1+0.05
+        AOD[((AODunc / AOD) > 0.3)] = np.nan    #
         AODunc[np.isnan(AOD)] = np.nan
 
         if 'SMokeHeight' in kwargs:
@@ -931,7 +931,7 @@ def CSVload(file):
 def gethv(Datadir,x0,y0,**kwargs):
 
 
-    files=glob.glob(Datadir+'2002.02.23/*.hdf')
+    files=glob.glob(Datadir+'2008.06.18/*.hdf')
     strhv=[]
     for Aerfile in files:
         ds = SD(Aerfile, SDC.READ)
