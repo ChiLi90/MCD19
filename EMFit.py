@@ -11,6 +11,7 @@ import mmap
 from scipy.optimize import minimize as scipyminimize
 from scipy.optimize import Bounds, LinearConstraint, NonlinearConstraint, leastsq
 import numdifftools as nd
+
 #xW: windy coordinates
 #xC: Calm coordinates
 #AvgW(C): concentration under Windy (Calm) conditions
@@ -175,7 +176,7 @@ def EMGFit(x,data,nSample,**kwargs):
 
                 lbds = np.array([0., 0., np.min(x), 0., 0.])
                 hbds = np.array(
-                    [np.inf, np.inf, np.max(x), np.max([maxxW - np.min(x), np.max(x) - maxxW]), np.max(data)])
+                    [np.inf, np.inf, np.max(x), np.inf, np.max(data)])  #np.max([maxxW - np.min(x), np.max(x) - maxxW])
 
                 # test if solutions are similar for different "fixsource" handling
 
@@ -211,6 +212,7 @@ def EMGFit(x,data,nSample,**kwargs):
 
                         chisqr = EMGchisqr2(pars, x, data)
                     else:
+
                         res = scipyminimize(EMGchisqr1, x0, args=(x, data, DtWeights), method='trust-constr', \
                                             constraints=[nlconstr],options={'verbose': 0,'maxiter':50000}, \
                                             bounds=bounds)  # constraints=[nlconstr],
@@ -423,9 +425,7 @@ def EMAFit(x,data,nSample,**kwargs):
                 x0[5] = maxxW  # , min = x[0], max = x[-1])
 
                 lowbs = np.array([0., 0., 0., 0., np.min(x), np.min(x), 0., 0., 0.])
-                highbs = np.array([np.inf, np.inf, np.inf, np.inf, np.max(x), np.max(x), \
-                                   np.max([maxxW - np.min(x), np.max(x) - maxxW]), \
-                                   np.max([maxxW - np.max(x), np.max(x) - maxxW]), np.max(data)])
+                highbs = np.array([np.inf, np.inf, np.inf, np.inf, np.max(x), np.max(x), np.inf, np.inf, np.max(data)])  #np.max([maxxW - np.min(x), np.max(x) - maxxW])
 
                 if 'consparam' in kwargs:
                     for ipar in np.arange(len(consvalsl)):
@@ -545,7 +545,7 @@ def EMAFit(x,data,nSample,**kwargs):
                 print ("solver wrong! specify one of these: pyipm, trust-constr, lmfit !")
                 return [False, False]
 
-        print('EMA', ntry,nSample, chisqr/ np.mean(data) , minchisquare/ np.mean(data) )
+
         if (SolutionUpdated == False) & (SampleDoubled == False):
             nSample = np.int(nSample * 2)
             SampleDoubled = True
